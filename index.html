@@ -214,16 +214,30 @@
           render() { return html`<canvas></canvas>`; }
         }
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
+
+        // ==========================================
+        // LÓGICA DE INTELIGÊNCIA ARTIFICIAL E VOZ
+        // ==========================================
         
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
-        const GEMINI_API_KEY = "AIzaSyA_3oN4CleMzd-80gCArKq31zZFyKASPlU";
         
+        // Proteção DRevo contra vazamento: Salvar chave apenas no celular/computador do usuário
+        let GEMINI_API_KEY = localStorage.getItem('drevo_gemini_key');
+        if (!GEMINI_API_KEY || GEMINI_API_KEY === "null") {
+            GEMINI_API_KEY = prompt("🔐 SISTEMA DREVO: Cole sua nova chave da API do Google Gemini aqui para ligar o Cérebro IA (Ela ficará salva apenas no seu aparelho e não no GitHub):");
+            if (GEMINI_API_KEY && GEMINI_API_KEY.trim() !== "") {
+                localStorage.setItem('drevo_gemini_key', GEMINI_API_KEY.trim());
+            }
+        }
+        
+        // Estados: OFF, STANDBY, LISTENING_COMMAND, CONFIRMING, THINKING, SAVING
         let currentState = "OFF";
         let pendingData = { item: "", quantity: 1 };
         let isOrbSimulating = false;
         let isJarvisSpeaking = false;
         let globalRecognition = null;
 
+        // Função para perguntar ao Cérebro (Gemini)
         async function askGemini(promptText) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
             const payload = {
@@ -234,15 +248,19 @@
             try {
                 const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
                 const data = await response.json();
+                if (data.error) return "Acesso negado pela nuvem: " + data.error.message;
                 return data.candidates[0].content.parts[0].text.replace(/\*/g, ''); 
             } catch (e) {
                 return "Desculpe senhor, meus sistemas cognitivos em nuvem estão inacessíveis no momento.";
             }
         }
 
+        // Função para Extrair Números
         function extractData(spokenText) {
             const wordToNumber = { "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, "nove":9, "dez":10 };
+            
             let cleanText = spokenText.replace(/jarvis/g, "").replace(/anote/g, "").replace(/planilha/g, "").replace(/adicionar/g, "").replace(/estoque/g, "").trim();
+            
             let words = cleanText.split(' ');
             let quantity = 1;
             let itemText = cleanText;
@@ -276,6 +294,7 @@
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
+            // Voz Homem de Ferro: Grave e Levemente Lenta
             utterance.pitch = 0.1; 
             utterance.rate = 0.95;
 
