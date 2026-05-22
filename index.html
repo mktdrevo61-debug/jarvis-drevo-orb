@@ -2,8 +2,10 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>DREVO JARVIS - ORB EDITION</title>
+    <title>DRevo Jarvis - Produção</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Import Maps para Three.js e Lit -->
     <script type="importmap">
       {
         "imports": {
@@ -22,7 +24,7 @@
             padding: 0; 
             width: 100%; 
             height: 100%; 
-            background: #050508; 
+            background: #030305; 
             color: #00f2ff; 
             font-family: 'Segoe UI', system-ui, sans-serif; 
             overflow: hidden;
@@ -32,28 +34,90 @@
             justify-content: center;
         }
 
+        /* Watermark DRevo */
+        .drevo-watermark {
+            position: absolute;
+            bottom: 20px;
+            right: 25px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 5px;
+            color: rgba(255, 170, 0, 0.4);
+            text-transform: uppercase;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism UI */
         #ui-layer {
             position: absolute;
             bottom: 50px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(10, 10, 20, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-radius: 20px;
-            padding: 30px 40px;
+            background: rgba(5, 10, 20, 0.45);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 242, 255, 0.25);
+            border-top: 1px solid rgba(0, 242, 255, 0.5);
+            border-radius: 24px;
+            padding: 35px 40px;
             text-align: center;
             z-index: 10;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0, 242, 255, 0.1);
-            width: 80%;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6), inset 0 0 20px rgba(0, 242, 255, 0.05);
+            width: 85%;
             max-width: 500px;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        h1 { margin: 0 0 10px 0; font-size: 24px; letter-spacing: 2px; font-weight: 600; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
-        #status { letter-spacing: 2px; font-weight: bold; font-size: 14px; color: #ffaa00; margin-bottom: 15px; transition: color 0.3s; }
-        #output { font-size: 18px; color: #ffffff; font-weight: 300; min-height: 25px; }
+        #ui-layer:hover {
+            border: 1px solid rgba(0, 242, 255, 0.5);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6), 0 0 30px rgba(0, 242, 255, 0.15);
+        }
+
+        .drevo-logo {
+            font-size: 11px;
+            letter-spacing: 4px;
+            color: #ffaa00;
+            text-transform: uppercase;
+            margin-bottom: -5px;
+            font-weight: 800;
+            opacity: 0.9;
+        }
+
+        h1 { 
+            margin: 5px 0 15px 0; 
+            font-size: 26px; 
+            letter-spacing: 3px; 
+            font-weight: 300; 
+            color: #fff;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.8); 
+        }
+        
+        h1 strong {
+            font-weight: 700;
+            color: #00f2ff;
+        }
+
+        #status { 
+            letter-spacing: 2px; 
+            font-weight: 700; 
+            font-size: 13px; 
+            color: #ffaa00; 
+            margin-bottom: 15px; 
+            transition: color 0.3s; 
+            text-transform: uppercase;
+        }
+
+        #output { 
+            font-size: 18px; 
+            color: #e0faff; 
+            font-weight: 400; 
+            min-height: 25px; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
         
         gdm-live-audio-visuals-3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
         #trigger-zone { position: absolute; inset: 0; z-index: 20; cursor: pointer; }
@@ -61,12 +125,17 @@
 </head>
 <body>
 
+    <div class="drevo-watermark">DREVO SYSTEMS</div>
+
     <gdm-live-audio-visuals-3d id="orb-visualizer"></gdm-live-audio-visuals-3d>
+    
     <div id="trigger-zone" onclick="iniciarJarvis()"></div>
+    
     <div id="ui-layer">
-        <h1>DREVO JARVIS</h1>
-        <p id="status">CLIQUE EM QUALQUER LUGAR PARA INICIAR</p>
-        <div id="output">Aguardando...</div>
+        <div class="drevo-logo">Desenvolvido para DRevo</div>
+        <h1>JARVIS <strong>PRO</strong></h1>
+        <p id="status">CLIQUE NA TELA PARA INICIAR</p>
+        <div id="output">Aguardando comando...</div>
     </div>
 
     <script type="module">
@@ -76,7 +145,6 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // 1. Analyser Class Inline
         class Analyser {
             constructor(node) {
                 this.analyser = node.context.createAnalyser();
@@ -89,26 +157,8 @@
             get data() { return this.dataArray; }
         }
 
-        // 2. Shaders Inline
-        const backdropVS = `precision highp float;
-        in vec3 position;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
-
-        const backdropFS = `precision highp float;
-        out vec4 fragmentColor;
-        uniform vec2 resolution;
-        uniform float rand;
-        void main() {
-          float aspectRatio = resolution.x / resolution.y; 
-          vec2 vUv = gl_FragCoord.xy / resolution;
-          float noise = (fract(sin(dot(vUv, vec2(12.9898 + rand,78.233)*2.0)) * 43758.5453));
-          vUv -= .5; vUv.x *= aspectRatio;
-          float factor = 4.; float d = factor * length(vUv);
-          vec3 from = vec3(3.) / 255.; vec3 to = vec3(16., 12., 20.) / 2550.;
-          fragmentColor = vec4(mix(from, to, d) + .005 * noise, 1.);
-        }`;
+        const backdropVS = `precision highp float; in vec3 position; uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
+        const backdropFS = `precision highp float; out vec4 fragmentColor; uniform vec2 resolution; uniform float rand; void main() { float aspectRatio = resolution.x / resolution.y; vec2 vUv = gl_FragCoord.xy / resolution; float noise = (fract(sin(dot(vUv, vec2(12.9898 + rand,78.233)*2.0)) * 43758.5453)); vUv -= .5; vUv.x *= aspectRatio; float factor = 4.; float d = factor * length(vUv); vec3 from = vec3(3.) / 255.; vec3 to = vec3(16., 12., 20.) / 2550.; fragmentColor = vec4(mix(from, to, d) + .005 * noise, 1.); }`;
 
         const sphereVS = `#define STANDARD
         varying vec3 vViewPosition;
@@ -128,21 +178,9 @@
         #include <logdepthbuf_pars_vertex>
         #include <clipping_planes_pars_vertex>
 
-        uniform float time;
-        uniform vec4 inputData;
-        uniform vec4 outputData;
-
-        vec3 calc( vec3 pos ) {
-          vec3 dir = normalize( pos );
-          vec3 p = dir + vec3( time, 0., 0. );
-          return pos +
-            1. * inputData.x * inputData.y * dir * (.5 + .5 * sin(inputData.z * pos.x + time)) +
-            1. * outputData.x * outputData.y * dir * (.5 + .5 * sin(outputData.z * pos.y + time));
-        }
-
-        vec3 spherical( float r, float theta, float phi ) {
-          return r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi));
-        }
+        uniform float time; uniform vec4 inputData; uniform vec4 outputData;
+        vec3 calc( vec3 pos ) { vec3 dir = normalize( pos ); vec3 p = dir + vec3( time, 0., 0. ); return pos + 1. * inputData.x * inputData.y * dir * (.5 + .5 * sin(inputData.z * pos.x + time)) + 1. * outputData.x * outputData.y * dir * (.5 + .5 * sin(outputData.z * pos.y + time)); }
+        vec3 spherical( float r, float theta, float phi ) { return r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi)); }
 
         void main() {
           #include <uv_vertex>
@@ -158,19 +196,12 @@
           #include <normal_vertex>
           #include <begin_vertex>
 
-          float inc = 0.001;
-          float r = length( position );
-          float theta = ( uv.x + 0.5 ) * 2. * PI;
-          float phi = -( uv.y + 0.5 ) * PI;
-
+          float inc = 0.001; float r = length( position ); float theta = ( uv.x + 0.5 ) * 2. * PI; float phi = -( uv.y + 0.5 ) * PI;
           vec3 np = calc( spherical( r, theta, phi ) );
-
           vec3 tangent = normalize( calc( spherical( r, theta + inc, phi ) ) - np );
           vec3 bitangent = normalize( calc( spherical( r, theta, phi + inc ) ) - np );
           transformedNormal = -normalMatrix * normalize( cross( tangent, bitangent ) );
-
-          vNormal = normalize( transformedNormal );
-          transformed = np;
+          vNormal = normalize( transformedNormal ); transformed = np;
 
           #include <morphtarget_vertex>
           #include <skinning_vertex>
@@ -187,158 +218,153 @@
           #endif
         }`;
 
-        // 3. Lit Component Inline
         class GdmLiveAudioVisuals3D extends LitElement {
           static get properties() { return { outputNode: { type: Object }, inputNode: { type: Object } }; }
           constructor() { super(); this.prevTime = 0; this.rotationVec = new THREE.Vector3(0, 0, 0); }
-
           set outputNode(node) { this._outputNode = node; if (node) this.outputAnalyser = new Analyser(this._outputNode); }
           get outputNode() { return this._outputNode; }
           set inputNode(node) { this._inputNode = node; if (node) this.inputAnalyser = new Analyser(this._inputNode); }
           get inputNode() { return this._inputNode; }
-
-          static get styles() {
-            return css`
-              canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; z-index: -1; }
-            `;
-          }
+          static get styles() { return css`canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; z-index: -1; }`; }
 
           init() {
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x100c14);
+            const scene = new THREE.Scene(); scene.background = new THREE.Color(0x100c14);
+            const backdrop = new THREE.Mesh(new THREE.IcosahedronGeometry(10, 5), new THREE.RawShaderMaterial({ uniforms: { resolution: { value: new THREE.Vector2(1, 1) }, rand: { value: 0 } }, vertexShader: backdropVS, fragmentShader: backdropFS, glslVersion: THREE.GLSL3, }));
+            backdrop.material.side = THREE.BackSide; scene.add(backdrop); this.backdrop = backdrop;
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(2, -2, 5); this.camera = camera;
+            const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio / 1);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 2); dirLight.position.set(5, 5, 5); scene.add(dirLight);
 
-            const backdrop = new THREE.Mesh(
-              new THREE.IcosahedronGeometry(10, 5),
-              new THREE.RawShaderMaterial({
-                uniforms: { resolution: { value: new THREE.Vector2(1, 1) }, rand: { value: 0 } },
-                vertexShader: backdropVS, fragmentShader: backdropFS, glslVersion: THREE.GLSL3,
-              })
-            );
-            backdrop.material.side = THREE.BackSide;
-            scene.add(backdrop);
-            this.backdrop = backdrop;
+            const sphereMat = new THREE.MeshStandardMaterial({ color: 0x000010, metalness: 0.8, roughness: 0.2, emissive: 0x00aaff, emissiveIntensity: 0.2 });
+            sphereMat.onBeforeCompile = (shader) => { shader.uniforms.time = { value: 0 }; shader.uniforms.inputData = { value: new THREE.Vector4() }; shader.uniforms.outputData = { value: new THREE.Vector4() }; sphereMat.userData.shader = shader; shader.vertexShader = sphereVS; };
+            const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 10), sphereMat); scene.add(sphere); this.sphere = sphere;
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(2, -2, 5);
-            this.camera = camera;
+            const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera)); composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.5, 0.5, 0)); this.composer = composer;
 
-            const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio / 1);
-
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
-
-            const sphereMaterial = new THREE.MeshStandardMaterial({
-              color: 0x000010, metalness: 0.8, roughness: 0.2, emissive: 0x00aaff, emissiveIntensity: 0.2,
-            });
-
-            sphereMaterial.onBeforeCompile = (shader) => {
-              shader.uniforms.time = { value: 0 };
-              shader.uniforms.inputData = { value: new THREE.Vector4() };
-              shader.uniforms.outputData = { value: new THREE.Vector4() };
-              sphereMaterial.userData.shader = shader;
-              shader.vertexShader = sphereVS;
-            };
-
-            const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 10), sphereMaterial);
-            scene.add(sphere);
-            this.sphere = sphere;
-
-            const renderPass = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.5, 0.5, 0);
-
-            const composer = new EffectComposer(renderer);
-            composer.addPass(renderPass);
-            composer.addPass(bloomPass);
-            this.composer = composer;
-
-            const onWindowResize = () => {
-              camera.aspect = window.innerWidth / window.innerHeight;
-              camera.updateProjectionMatrix();
-              const dPR = renderer.getPixelRatio();
-              const w = window.innerWidth;
-              const h = window.innerHeight;
-              backdrop.material.uniforms.resolution.value.set(w * dPR, h * dPR);
-              renderer.setSize(w, h);
-              composer.setSize(w, h);
-            };
-            window.addEventListener('resize', onWindowResize);
-            onWindowResize();
-            this.animation();
+            const onResize = () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); const dPR = renderer.getPixelRatio(); const w = window.innerWidth; const h = window.innerHeight; backdrop.material.uniforms.resolution.value.set(w * dPR, h * dPR); renderer.setSize(w, h); composer.setSize(w, h); };
+            window.addEventListener('resize', onResize); onResize(); this.animation();
           }
 
           animation() {
             requestAnimationFrame(() => this.animation());
-            if (this.inputAnalyser) this.inputAnalyser.update();
-            if (this.outputAnalyser) this.outputAnalyser.update();
+            if (this.inputAnalyser) this.inputAnalyser.update(); if (this.outputAnalyser) this.outputAnalyser.update();
+            const t = performance.now(); const dt = (t - this.prevTime) / (1000 / 60); this.prevTime = t;
+            this.backdrop.material.uniforms.rand.value = Math.random() * 10000;
 
-            const t = performance.now();
-            const dt = (t - this.prevTime) / (1000 / 60);
-            this.prevTime = t;
-
-            const backdropMaterial = this.backdrop.material;
-            const sphereMaterial = this.sphere.material;
-
-            backdropMaterial.uniforms.rand.value = Math.random() * 10000;
-
-            if (sphereMaterial.userData.shader) {
+            if (this.sphere.material.userData.shader) {
               const outData = this.outputAnalyser ? this.outputAnalyser.data : new Uint8Array(32);
               const inData = this.inputAnalyser ? this.inputAnalyser.data : new Uint8Array(32);
-
               this.sphere.scale.setScalar(1 + (0.2 * outData[1]) / 255 + (0.2 * inData[1]) / 255);
-
-              const f = 0.001;
-              this.rotationVec.x += (dt * f * 0.5 * outData[1]) / 255 + (dt * f * 0.5 * inData[1]) / 255;
-              this.rotationVec.z += (dt * f * 0.5 * inData[1]) / 255;
-              this.rotationVec.y += (dt * f * 0.25 * inData[2]) / 255 + (dt * f * 0.25 * outData[2]) / 255;
-
+              const f = 0.001; this.rotationVec.x += (dt * f * 0.5 * outData[1]) / 255 + (dt * f * 0.5 * inData[1]) / 255; this.rotationVec.z += (dt * f * 0.5 * inData[1]) / 255; this.rotationVec.y += (dt * f * 0.25 * inData[2]) / 255 + (dt * f * 0.25 * outData[2]) / 255;
               const euler = new THREE.Euler(this.rotationVec.x, this.rotationVec.y, this.rotationVec.z);
-              const quaternion = new THREE.Quaternion().setFromEuler(euler);
-              const vector = new THREE.Vector3(0, 0, 5);
-              vector.applyQuaternion(quaternion);
-              this.camera.position.copy(vector);
-              this.camera.lookAt(this.sphere.position);
-
-              sphereMaterial.userData.shader.uniforms.time.value += (dt * 0.1 * outData[0]) / 255 + (dt * 0.1 * inData[0]) / 255;
-              sphereMaterial.userData.shader.uniforms.inputData.value.set((1 * inData[0]) / 255, (0.1 * inData[1]) / 255, (10 * inData[2]) / 255, 0);
-              sphereMaterial.userData.shader.uniforms.outputData.value.set((2 * outData[0]) / 255, (0.1 * outData[1]) / 255, (10 * outData[2]) / 255, 0);
+              this.camera.position.copy(new THREE.Vector3(0, 0, 5).applyQuaternion(new THREE.Quaternion().setFromEuler(euler))); this.camera.lookAt(this.sphere.position);
+              this.sphere.material.userData.shader.uniforms.time.value += (dt * 0.1 * outData[0]) / 255 + (dt * 0.1 * inData[0]) / 255;
+              this.sphere.material.userData.shader.uniforms.inputData.value.set((1 * inData[0]) / 255, (0.1 * inData[1]) / 255, (10 * inData[2]) / 255, 0);
+              this.sphere.material.userData.shader.uniforms.outputData.value.set((2 * outData[0]) / 255, (0.1 * outData[1]) / 255, (10 * outData[2]) / 255, 0);
             }
             this.composer.render();
           }
-
           firstUpdated() { this.canvas = this.shadowRoot.querySelector('canvas'); this.init(); }
           render() { return html`<canvas></canvas>`; }
         }
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
-        // 4. Main App Logic
-        let isListening = false;
+        // ==========================================
+        // 4. LÓGICA DE INTELIGÊNCIA DO DREVO JARVIS
+        // ==========================================
+        
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
+        
+        // Estados: IDLE, LISTENING_ITEM, CONFIRMING, SAVING
+        let currentState = "IDLE";
+        let pendingData = { item: "", quantity: 1 };
+        let isOrbSimulating = false;
 
-        window.iniciarJarvis = async function() {
+        // Função para Extrair Números e Palavras Inteligentes
+        function extractData(spokenText) {
+            const wordToNumber = { 
+                "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, 
+                "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, 
+                "nove":9, "dez":10, "onze":11, "doze":12, "vinte":20, "cem":100 
+            };
+            
+            let words = spokenText.trim().split(' ');
+            let quantity = 1;
+            let itemText = spokenText;
+
+            if (words.length > 0) {
+                let firstWord = words[0].toLowerCase();
+                // Tenta ver se a primeira palavra é um número explícito (Ex: "10")
+                if (!isNaN(parseInt(firstWord))) {
+                    quantity = parseInt(firstWord);
+                    words.shift(); // Remove o número da frase
+                    itemText = words.join(' ');
+                } 
+                // Tenta ver se é um número por extenso (Ex: "cinco")
+                else if (wordToNumber[firstWord]) {
+                    quantity = wordToNumber[firstWord];
+                    words.shift(); // Remove a palavra da frase
+                    itemText = words.join(' ');
+                }
+            }
+            return { quantity: quantity, item: itemText.trim() };
+        }
+
+        // Função para alterar a tela e as cores
+        function updateUI(statusText, outputText, color) {
             const statusEl = document.getElementById('status');
             const outputEl = document.getElementById('output');
-            const visualizer = document.getElementById('orb-visualizer');
+            statusEl.innerText = statusText;
+            statusEl.style.color = color;
+            if(outputText !== null) outputEl.innerText = outputText;
+        }
 
-            if(isListening) return;
+        // Função para o Jarvis Falar
+        function speakJarvis(text, onEndCallback) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'pt-BR';
+            utterance.pitch = 0.4; // Voz Grave DRevo
+            utterance.rate = 1.05;
 
-            try {
-                // Removemos a criação do AudioContext pois ele estava "roubando" a sessão de áudio do Windows
-                // e causando o erro not-allowed no SpeechRecognition.
-                
-                // Removido o getUserMedia para evitar o bloqueio de hardware do microfone no Windows
-                // O Web Speech API captura o microfone sozinho.
-                // Vamos simular os dados do Orb para ele reagir enquanto ouve!
+            // Busca a voz masculina
+            const voices = window.speechSynthesis.getVoices();
+            const jarvisVoice = voices.find(v => v.name.includes('Antonio') || v.name.includes('UK English Male') || v.name.includes('Masculino'));
+            if (jarvisVoice) utterance.voice = jarvisVoice;
+
+            if(onEndCallback) utterance.onend = onEndCallback;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Inicia o processo quando o usuário clica
+        window.iniciarJarvis = function() {
+            if(currentState !== "IDLE") return;
+            startListening("LISTENING_ITEM");
+        };
+
+        function startListening(newState) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Reconhecimento não suportado neste navegador.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.continuous = false;
+            recognition.interimResults = true;
+
+            currentState = newState;
+
+            recognition.onstart = () => {
+                // Inicia o simulador do Orb (Efeito visual de ouvir)
+                const visualizer = document.getElementById('orb-visualizer');
+                isOrbSimulating = true;
                 if (!window.simuladorOrb) {
                     window.simuladorOrb = setInterval(() => {
-                        if (isListening && visualizer.sphere) {
+                        if (isOrbSimulating && visualizer.sphere) {
                             const fakeData = new Uint8Array(32);
                             for(let i=0; i<32; i++) fakeData[i] = Math.random() * 255;
-                            // Injeta os dados falsos diretamente no visualizador
                             visualizer.outputAnalyser = { data: fakeData, update: () => {} };
                             visualizer.inputAnalyser = { data: fakeData, update: () => {} };
                         } else if (visualizer.sphere) {
@@ -348,93 +374,89 @@
                     }, 50);
                 }
 
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) throw new Error("Reconhecimento de voz não suportado neste navegador.");
+                // Atualiza a UI baseada no Estado
+                if(currentState === "LISTENING_ITEM") {
+                    updateUI("OUVINDO...", "Diga a quantidade e o item (ex: '2 dobradiças')", "#00ff66");
+                } else if(currentState === "CONFIRMING") {
+                    updateUI("AGUARDANDO CONFIRMAÇÃO", "Diga: 'Sim', 'Confirmo' ou 'Não'", "#ffaa00");
+                }
+            };
 
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'pt-BR';
-                recognition.continuous = false;
-                recognition.interimResults = true;
+            recognition.onerror = (event) => {
+                isOrbSimulating = false;
+                if(event.error === 'no-speech') {
+                    updateUI("NENHUMA VOZ DETECTADA", "Clique novamente para tentar", "#ffaa00");
+                } else {
+                    updateUI("ERRO", event.error, "#ff0000");
+                }
+                currentState = "IDLE";
+            };
 
-                recognition.onstart = () => {
-                    isListening = true;
-                    statusEl.innerText = "OUVINDO...";
-                    statusEl.style.color = "#00ff66";
-                };
+            recognition.onresult = (event) => {
+                document.getElementById('output').innerText = event.results[0][0].transcript;
+            };
 
-                recognition.onerror = (event) => {
-                    isListening = false;
-                    statusEl.innerText = "ERRO NO RECONHECIMENTO";
-                    outputEl.innerText = "Detalhe do erro: " + event.error;
-                    statusEl.style.color = "#ff0000";
-                };
+            recognition.onend = () => {
+                isOrbSimulating = false;
+                const text = document.getElementById('output').innerText.trim().toLowerCase();
+                
+                // Trata o caso de finalização vazia
+                if (!text || text.includes("diga a quantidade") || text.includes("diga: 'sim'") || text.includes("aguardando")) {
+                    updateUI("CLIQUE PARA FALAR NOVAMENTE", "Aguardando...", "#00f2ff");
+                    currentState = "IDLE";
+                    return;
+                }
 
-                recognition.onresult = (event) => {
-                    outputEl.innerText = event.results[0][0].transcript;
-                };
-
-                recognition.onend = async () => {
-                    isListening = false;
-                    const text = outputEl.innerText;
+                // Fluxo 1: Entendeu o Item, pede Confirmação
+                if (currentState === "LISTENING_ITEM") {
+                    const data = extractData(text);
+                    pendingData = data;
                     
-                    if (!text || text === "Aguardando...") {
-                        statusEl.innerText = "CLIQUE PARA FALAR NOVAMENTE";
-                        statusEl.style.color = "#ffaa00";
-                        return;
-                    }
+                    updateUI("PROCESSANDO...", `Item: ${data.item} | Qtd: ${data.quantity}`, "#00f2ff");
+                    
+                    // Fala e liga o mic logo depois!
+                    speakJarvis(`Entendido. ${data.quantity} ${data.item}. Confirma?`, () => {
+                        startListening("CONFIRMING");
+                    });
 
-                    statusEl.innerText = "PROCESSANDO E SALVANDO...";
-                    statusEl.style.color = "#00f2ff";
-
-                    try {
-                        await fetch(SCRIPT_URL, {
+                } 
+                // Fluxo 2: Entendeu a Confirmação e vai Salvar (ou Cancelar)
+                else if (currentState === "CONFIRMING") {
+                    
+                    if (text.includes("sim") || text.includes("confirma") || text.includes("correto") || text.includes("isso") || text.includes("pode salvar") || text.includes("ok")) {
+                        
+                        currentState = "SAVING";
+                        updateUI("SALVANDO NA PLANILHA...", "Enviando dados da DRevo...", "#00f2ff");
+                        speakJarvis("Salvando na planilha.");
+                        
+                        fetch(SCRIPT_URL, {
                             method: 'POST',
                             mode: 'no-cors',
-                            body: JSON.stringify({ item: text, quantidade: "Voz", categoria: "Estoque" })
+                            body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, categoria: "Estoque" })
+                        }).then(() => {
+                            updateUI("✅ ADICIONADO!", `${pendingData.quantity}x ${pendingData.item}`, "#00ff66");
+                            speakJarvis("Pronto, senhor.");
+                            currentState = "IDLE";
+                        }).catch((e) => {
+                            updateUI("ERRO AO SALVAR", e.message, "#ff0000");
+                            currentState = "IDLE";
                         });
-                        
-                        outputEl.innerText = "✅ SALVO: " + text;
-                        statusEl.innerText = "PRONTO! CLIQUE PARA NOVO ITEM.";
-                        statusEl.style.color = "#ffaa00";
-                        
-                        const utterance = new SpeechSynthesisUtterance("Anotei " + text + " na planilha, Senhor.");
-                        utterance.lang = 'pt-BR';
-                        
-                        // Configurações para simular a voz do Jarvis (Profunda e séria)
-                        utterance.pitch = 0.4; // Mais grave
-                        utterance.rate = 1.05; // Levemente mais rápido
 
-                        // Tenta encontrar uma voz masculina em português ou uma voz com sotaque britânico do Windows
-                        const voices = window.speechSynthesis.getVoices();
-                        const jarvisVoice = voices.find(v => 
-                            v.name.includes('Antonio') || // Microsoft Antonio (Masculina pt-BR)
-                            v.name.includes('Google português do Brasil') || 
-                            v.name.includes('UK English Male') // Sotaque britânico (Jarvis original)
-                        );
-                        
-                        if (jarvisVoice) {
-                            utterance.voice = jarvisVoice;
-                        }
-
-                        window.speechSynthesis.speak(utterance);
-
-                    } catch (e) {
-                        outputEl.innerText = "Erro: " + e.message;
-                        statusEl.innerText = "ERRO!";
-                        statusEl.style.color = "#ff0000";
+                    } else {
+                        updateUI("AÇÃO CANCELADA", "Clique para começar novamente.", "#ffaa00");
+                        speakJarvis("Cancelado. Clique quando quiser anotar de novo.");
+                        currentState = "IDLE";
                     }
-                };
+                }
+            };
 
+            // Inicia o microfone
+            try {
                 recognition.start();
-
-            } catch (err) {
-                console.error(err);
-                statusEl.innerText = "ERRO NO MICROFONE/VOZ";
-                outputEl.innerText = err.message;
-                statusEl.style.color = "#ff0000";
-                isListening = false;
+            } catch(e) {
+                currentState = "IDLE";
             }
-        };
+        }
     </script>
 </body>
 </html>
