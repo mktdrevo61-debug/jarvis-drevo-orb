@@ -316,8 +316,6 @@
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
         // 4. Main App Logic
-        let audioCtx;
-        let micStream;
         let isListening = false;
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
 
@@ -329,7 +327,8 @@
             if(isListening) return;
 
             try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // Removemos a criação do AudioContext pois ele estava "roubando" a sessão de áudio do Windows
+                // e causando o erro not-allowed no SpeechRecognition.
                 
                 // Removido o getUserMedia para evitar o bloqueio de hardware do microfone no Windows
                 // O Web Speech API captura o microfone sozinho.
