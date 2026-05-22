@@ -107,7 +107,15 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
         
-        gdm-live-audio-visuals-3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+        gdm-live-audio-visuals-3d { 
+            display: block;
+            position: absolute; 
+            top: 0; left: 0;
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1; 
+            pointer-events: none;
+        }
         #trigger-zone { position: absolute; inset: 0; z-index: 20; cursor: pointer; }
     </style>
 </head>
@@ -170,7 +178,7 @@
           get outputNode() { return this._outputNode; }
           set inputNode(node) { this._inputNode = node; if (node) this.inputAnalyser = new Analyser(this._inputNode); }
           get inputNode() { return this._inputNode; }
-          static get styles() { return css`canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; pointer-events: none; z-index: 0; }`; }
+          static get styles() { return css`canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; z-index: -1; pointer-events: none; }`; }
 
           init() {
             const scene = new THREE.Scene(); scene.background = new THREE.Color(0x100c14);
@@ -299,16 +307,14 @@
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
-            // Voz Natural, Clara e Profissional (sem distorção de robô)
-            utterance.pitch = 1.0; 
-            utterance.rate = 1.05; 
-
-            // Tenta pegar a melhor voz em Português do Google ou padrão do sistema
-            const voices = window.speechSynthesis.getVoices();
-            const bestVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Daniel') || v.name.includes('Online'))) 
-                           || voices.find(v => v.lang.includes('pt-BR'));
             
-            if (bestVoice) utterance.voice = bestVoice;
+            // VOLTANDO PARA A VOZ "HOMEM DE FERRO" (Grave e Robótica)
+            utterance.pitch = 0.2; 
+            utterance.rate = 1.15; 
+
+            const voices = window.speechSynthesis.getVoices();
+            const jarvisVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Antonio') || v.name.includes('Male') || v.name.includes('Masculino'));
+            if (jarvisVoice) utterance.voice = jarvisVoice;
 
             utterance.onend = () => {
                 isJarvisSpeaking = false;
