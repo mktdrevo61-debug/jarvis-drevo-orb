@@ -94,8 +94,7 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
         
-        gdm-live-audio-visuals-3d { 
-            display: block;
+        #orb-visualizer { 
             position: absolute; 
             top: 0; left: 0;
             width: 100vw; 
@@ -104,13 +103,20 @@
             pointer-events: none;
         }
 
+        #orb-visualizer canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
         #trigger-zone { position: absolute; inset: 0; z-index: 20; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="drevo-watermark">DREVO SYSTEMS</div>
-    <gdm-live-audio-visuals-3d id="orb-visualizer"></gdm-live-audio-visuals-3d>
+    <div id="orb-visualizer"></div>
     <div id="trigger-zone" onclick="iniciarJarvis()"></div>
     
     <div id="ui-layer">
@@ -120,23 +126,11 @@
         <div id="output">Ouvindo em Standby...</div>
     </div>
 
-    <script type="importmap">
-      {
-        "imports": {
-          "lit": "https://esm.sh/lit@^3.3.0",
-          "lit/": "https://esm.sh/lit@^3.3.0/",
-          "@lit/context": "https://esm.sh/@lit/context@^1.1.5",
-          "three": "https://esm.sh/three@^0.176.0",
-          "three/": "https://esm.sh/three@^0.176.0/"
-        }
-      }
-    </script>
     <script type="module">
-        import { LitElement, css, html } from 'lit';
-        import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import * as THREE from 'https://esm.sh/three@0.176.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.176.0/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.176.0/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.176.0/addons/postprocessing/UnrealBloomPass.js';
 
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
 
@@ -145,90 +139,127 @@
         let isOrbSimulating = false;
         let ignoreRecognition = false;
         let globalRecognition = null;
+        
+        let micAnalyser = null;
+        let micDataArray = new Uint8Array(32);
+        let jarvisAnalyserData = new Uint8Array(32);
+        let sphereMesh = null;
 
-        class Analyser {
-            constructor(node) {
-                this.analyser = node.context.createAnalyser();
-                this.analyser.fftSize = 32;
-                this.bufferLength = this.analyser.frequencyBinCount;
-                this.dataArray = new Uint8Array(this.bufferLength);
-                node.connect(this.analyser);
+        function initBulletproofOrb() {
+            const container = document.getElementById('orb-visualizer');
+            
+            try {
+                const scene = new THREE.Scene(); 
+                scene.background = new THREE.Color(0x100c14);
+                
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); 
+                camera.position.set(2, -2, 5); 
+                
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
+                renderer.setSize(window.innerWidth, window.innerHeight); 
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(renderer.domElement);
+                
+                scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+                const dirLight = new THREE.DirectionalLight(0xffffff, 2); 
+                dirLight.position.set(5, 5, 5); 
+                scene.add(dirLight);
+
+                const sphereVS = `
+                #define STANDARD
+                varying vec3 vViewPosition; #ifdef USE_TRANSMISSION varying vec3 vWorldPosition; #endif
+                #include <common> #include <batching_pars_vertex> #include <uv_pars_vertex> #include <displacementmap_pars_vertex> #include <color_pars_vertex> #include <fog_pars_vertex> #include <normal_pars_vertex> #include <morphtarget_pars_vertex> #include <skinning_pars_vertex> #include <shadowmap_pars_vertex> #include <logdepthbuf_pars_vertex> #include <clipping_planes_pars_vertex>
+                uniform float time; uniform vec4 inputData; uniform vec4 outputData;
+                vec3 calc( vec3 pos ) { vec3 dir = normalize( pos ); vec3 p = dir + vec3( time, 0., 0. ); return pos + 1. * inputData.x * inputData.y * dir * (.5 + .5 * sin(inputData.z * pos.x + time)) + 1. * outputData.x * outputData.y * dir * (.5 + .5 * sin(outputData.z * pos.y + time)); }
+                vec3 spherical( float r, float theta, float phi ) { return r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi)); }
+                void main() {
+                  #include <uv_vertex> #include <color_vertex> #include <morphinstance_vertex> #include <morphcolor_vertex> #include <batching_vertex> #include <beginnormal_vertex> #include <morphnormal_vertex> #include <skinbase_vertex> #include <skinnormal_vertex> #include <defaultnormal_vertex> #include <normal_vertex> #include <begin_vertex>
+                  float inc = 0.001; float r = length( position ); float theta = ( uv.x + 0.5 ) * 2. * PI; float phi = -( uv.y + 0.5 ) * PI;
+                  vec3 np = calc( spherical( r, theta, phi ) );
+                  vec3 tangent = normalize( calc( spherical( r, theta + inc, phi ) ) - np ); vec3 bitangent = normalize( calc( spherical( r, theta, phi + inc ) ) - np );
+                  transformedNormal = -normalMatrix * normalize( cross( tangent, bitangent ) );
+                  vNormal = normalize( transformedNormal ); transformed = np;
+                  #include <morphtarget_vertex> #include <skinning_vertex> #include <displacementmap_vertex> #include <project_vertex> #include <logdepthbuf_vertex> #include <clipping_planes_vertex>
+                  vViewPosition = - mvPosition.xyz; #include <worldpos_vertex> #include <shadowmap_vertex> #include <fog_vertex> #ifdef USE_TRANSMISSION vWorldPosition = worldPosition.xyz; #endif
+                }`;
+
+                const sphereMat = new THREE.MeshStandardMaterial({ color: 0x000010, metalness: 0.8, roughness: 0.2, emissive: 0x00aaff, emissiveIntensity: 0.2 });
+                sphereMat.onBeforeCompile = (shader) => { shader.uniforms.time = { value: 0 }; shader.uniforms.inputData = { value: new THREE.Vector4() }; shader.uniforms.outputData = { value: new THREE.Vector4() }; sphereMat.userData.shader = shader; shader.vertexShader = sphereVS; };
+                sphereMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 32), sphereMat); 
+                scene.add(sphereMesh); 
+
+                const composer = new EffectComposer(renderer); 
+                composer.addPass(new RenderPass(scene, camera)); 
+                composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.5, 0.5, 0));
+
+                window.addEventListener('resize', () => { 
+                    camera.aspect = window.innerWidth / window.innerHeight; 
+                    camera.updateProjectionMatrix(); 
+                    renderer.setSize(window.innerWidth, window.innerHeight); 
+                    composer.setSize(window.innerWidth, window.innerHeight); 
+                });
+
+                let prevTime = performance.now();
+                let rotationVec = new THREE.Vector3(0, 0, 0);
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    
+                    if(micAnalyser) {
+                        micAnalyser.getByteFrequencyData(micDataArray);
+                    } else {
+                        micDataArray.fill(0);
+                    }
+
+                    const t = performance.now(); 
+                    const dt = Math.min((t - prevTime) / (1000 / 60), 2.0); 
+                    prevTime = t;
+
+                    if (sphereMesh && sphereMesh.material.userData.shader) {
+                      const outData = jarvisAnalyserData;
+                      const inData = micDataArray;
+                      
+                      const baseScale = 1 + Math.sin(t * 0.002) * 0.05; 
+                      sphereMesh.scale.setScalar(baseScale + (0.3 * outData[1]) / 255 + (0.3 * inData[1]) / 255);
+                      
+                      const f = 0.001; 
+                      rotationVec.x += (dt * f * 0.5 * outData[1]) / 255 + (dt * f * 0.5 * inData[1]) / 255 + 0.002; 
+                      rotationVec.z += (dt * f * 0.5 * inData[1]) / 255 + 0.001; 
+                      rotationVec.y += (dt * f * 0.25 * inData[2]) / 255 + (dt * f * 0.25 * outData[2]) / 255 + 0.003;
+                      
+                      const euler = new THREE.Euler(rotationVec.x, rotationVec.y, rotationVec.z);
+                      camera.position.copy(new THREE.Vector3(0, 0, 5).applyQuaternion(new THREE.Quaternion().setFromEuler(euler))); 
+                      camera.lookAt(sphereMesh.position);
+                      
+                      sphereMesh.material.userData.shader.uniforms.time.value += (dt * 0.1 * outData[0]) / 255 + (dt * 0.1 * inData[0]) / 255 + 0.01;
+                      sphereMesh.material.userData.shader.uniforms.inputData.value.set((1 * inData[0]) / 255, (0.1 * inData[1]) / 255, (10 * inData[2]) / 255, 0);
+                      sphereMesh.material.userData.shader.uniforms.outputData.value.set((2 * outData[0]) / 255, (0.1 * outData[1]) / 255, (10 * outData[2]) / 255, 0);
+                    }
+                    composer.render();
+                }
+                animate();
+
+            } catch (error) {
+                console.error("WebGL 3D Orb failed, using CSS fallback", error);
+                container.innerHTML = `<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:200px; height:200px; background:radial-gradient(circle, #00f2ff 0%, #000010 70%); border-radius:50%; box-shadow:0 0 50px #00aaff; animation: pulse 2s infinite alternate;"></div>
+                <style>@keyframes pulse { from { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } to { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } }</style>`;
             }
-            update() { this.analyser.getByteFrequencyData(this.dataArray); }
-            get data() { return this.dataArray; }
         }
 
-        const backdropVS = `precision highp float; in vec3 position; uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
-        const backdropFS = `precision highp float; out vec4 fragmentColor; uniform vec2 resolution; uniform float rand; void main() { float aspectRatio = resolution.x / resolution.y; vec2 vUv = gl_FragCoord.xy / resolution; float noise = (fract(sin(dot(vUv, vec2(12.9898 + rand,78.233)*2.0)) * 43758.5453)); vUv -= .5; vUv.x *= aspectRatio; float factor = 4.; float d = factor * length(vUv); vec3 from = vec3(3.) / 255.; vec3 to = vec3(16., 12., 20.) / 2550.; fragmentColor = vec4(mix(from, to, d) + .005 * noise, 1.); }`;
+        document.addEventListener("DOMContentLoaded", initBulletproofOrb);
 
-        const sphereVS = `#define STANDARD
-        varying vec3 vViewPosition; #ifdef USE_TRANSMISSION varying vec3 vWorldPosition; #endif
-        #include <common> #include <batching_pars_vertex> #include <uv_pars_vertex> #include <displacementmap_pars_vertex> #include <color_pars_vertex> #include <fog_pars_vertex> #include <normal_pars_vertex> #include <morphtarget_pars_vertex> #include <skinning_pars_vertex> #include <shadowmap_pars_vertex> #include <logdepthbuf_pars_vertex> #include <clipping_planes_pars_vertex>
-        uniform float time; uniform vec4 inputData; uniform vec4 outputData;
-        vec3 calc( vec3 pos ) { vec3 dir = normalize( pos ); vec3 p = dir + vec3( time, 0., 0. ); return pos + 1. * inputData.x * inputData.y * dir * (.5 + .5 * sin(inputData.z * pos.x + time)) + 1. * outputData.x * outputData.y * dir * (.5 + .5 * sin(outputData.z * pos.y + time)); }
-        vec3 spherical( float r, float theta, float phi ) { return r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi)); }
-        void main() {
-          #include <uv_vertex> #include <color_vertex> #include <morphinstance_vertex> #include <morphcolor_vertex> #include <batching_vertex> #include <beginnormal_vertex> #include <morphnormal_vertex> #include <skinbase_vertex> #include <skinnormal_vertex> #include <defaultnormal_vertex> #include <normal_vertex> #include <begin_vertex>
-          float inc = 0.001; float r = length( position ); float theta = ( uv.x + 0.5 ) * 2. * PI; float phi = -( uv.y + 0.5 ) * PI;
-          vec3 np = calc( spherical( r, theta, phi ) );
-          vec3 tangent = normalize( calc( spherical( r, theta + inc, phi ) ) - np ); vec3 bitangent = normalize( calc( spherical( r, theta, phi + inc ) ) - np );
-          transformedNormal = -normalMatrix * normalize( cross( tangent, bitangent ) );
-          vNormal = normalize( transformedNormal ); transformed = np;
-          #include <morphtarget_vertex> #include <skinning_vertex> #include <displacementmap_vertex> #include <project_vertex> #include <logdepthbuf_vertex> #include <clipping_planes_vertex>
-          vViewPosition = - mvPosition.xyz; #include <worldpos_vertex> #include <shadowmap_vertex> #include <fog_vertex> #ifdef USE_TRANSMISSION vWorldPosition = worldPosition.xyz; #endif
-        }`;
-
-        class GdmLiveAudioVisuals3D extends LitElement {
-          static get properties() { return { outputNode: { type: Object }, inputNode: { type: Object } }; }
-          constructor() { super(); this.prevTime = 0; this.rotationVec = new THREE.Vector3(0, 0, 0); }
-          set outputNode(node) { this._outputNode = node; if (node) this.outputAnalyser = new Analyser(this._outputNode); }
-          get outputNode() { return this._outputNode; }
-          set inputNode(node) { this._inputNode = node; if (node) this.inputAnalyser = new Analyser(this._inputNode); }
-          get inputNode() { return this._inputNode; }
-          static get styles() { return css`canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; z-index: -1; pointer-events: none; }`; }
-
-          init() {
-            const scene = new THREE.Scene(); scene.background = new THREE.Color(0x100c14);
-            const backdrop = new THREE.Mesh(new THREE.IcosahedronGeometry(10, 5), new THREE.RawShaderMaterial({ uniforms: { resolution: { value: new THREE.Vector2(1, 1) }, rand: { value: 0 } }, vertexShader: backdropVS, fragmentShader: backdropFS, glslVersion: THREE.GLSL3, }));
-            backdrop.material.side = THREE.BackSide; scene.add(backdrop); this.backdrop = backdrop;
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(2, -2, 5); this.camera = camera;
-            const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio / 1);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 2); dirLight.position.set(5, 5, 5); scene.add(dirLight);
-
-            const sphereMat = new THREE.MeshStandardMaterial({ color: 0x000010, metalness: 0.8, roughness: 0.2, emissive: 0x00aaff, emissiveIntensity: 0.2 });
-            sphereMat.onBeforeCompile = (shader) => { shader.uniforms.time = { value: 0 }; shader.uniforms.inputData = { value: new THREE.Vector4() }; shader.uniforms.outputData = { value: new THREE.Vector4() }; sphereMat.userData.shader = shader; shader.vertexShader = sphereVS; };
-            const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 10), sphereMat); scene.add(sphere); this.sphere = sphere;
-
-            const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera)); composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.5, 0.5, 0)); this.composer = composer;
-
-            const onResize = () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); const dPR = renderer.getPixelRatio(); const w = window.innerWidth; const h = window.innerHeight; backdrop.material.uniforms.resolution.value.set(w * dPR, h * dPR); renderer.setSize(w, h); composer.setSize(w, h); };
-            window.addEventListener('resize', onResize); onResize(); this.animation();
-          }
-
-          animation() {
-            requestAnimationFrame(() => this.animation());
-            if (this.inputAnalyser) this.inputAnalyser.update(); if (this.outputAnalyser) this.outputAnalyser.update();
-            const t = performance.now(); const dt = (t - this.prevTime) / (1000 / 60); this.prevTime = t;
-            this.backdrop.material.uniforms.rand.value = Math.random() * 10000;
-
-            if (this.sphere.material.userData.shader) {
-              const outData = this.outputAnalyser ? this.outputAnalyser.data : new Uint8Array(32);
-              const inData = this.inputAnalyser ? this.inputAnalyser.data : new Uint8Array(32);
-              this.sphere.scale.setScalar(1 + (0.2 * outData[1]) / 255 + (0.2 * inData[1]) / 255);
-              const f = 0.001; this.rotationVec.x += (dt * f * 0.5 * outData[1]) / 255 + (dt * f * 0.5 * inData[1]) / 255; this.rotationVec.z += (dt * f * 0.5 * inData[1]) / 255; this.rotationVec.y += (dt * f * 0.25 * inData[2]) / 255 + (dt * f * 0.25 * outData[2]) / 255;
-              const euler = new THREE.Euler(this.rotationVec.x, this.rotationVec.y, this.rotationVec.z);
-              this.camera.position.copy(new THREE.Vector3(0, 0, 5).applyQuaternion(new THREE.Quaternion().setFromEuler(euler))); this.camera.lookAt(this.sphere.position);
-              this.sphere.material.userData.shader.uniforms.time.value += (dt * 0.1 * outData[0]) / 255 + (dt * 0.1 * inData[0]) / 255;
-              this.sphere.material.userData.shader.uniforms.inputData.value.set((1 * inData[0]) / 255, (0.1 * inData[1]) / 255, (10 * inData[2]) / 255, 0);
-              this.sphere.material.userData.shader.uniforms.outputData.value.set((2 * outData[0]) / 255, (0.1 * outData[1]) / 255, (10 * outData[2]) / 255, 0);
+        async function initMicrophoneAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+                micAnalyser = audioContext.createAnalyser();
+                micAnalyser.fftSize = 32;
+                source.connect(micAnalyser);
+            } catch (err) {
+                console.log("Microfone de áudio não liberado para a orbe", err);
             }
-            this.composer.render();
-          }
-          firstUpdated() { this.canvas = this.shadowRoot.querySelector('canvas'); this.init(); }
-          render() { return html`<canvas></canvas>`; }
         }
-        customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
         // ==========================================
         // LÓGICA DO ASSISTENTE
@@ -279,16 +310,10 @@
         function speakJarvis(text, onEndCallback) {
             ignoreRecognition = true;
             isOrbSimulating = true;
-            const visualizer = document.getElementById('orb-visualizer');
             
             if (!window.simuladorOrb) {
                 window.simuladorOrb = setInterval(() => {
-                    if(visualizer && visualizer.sphere) {
-                        const fakeData = new Uint8Array(32);
-                        for(let i=0; i<32; i++) fakeData[i] = Math.random() * 255;
-                        visualizer.outputAnalyser = { data: fakeData, update: () => {} };
-                        visualizer.inputAnalyser = { data: fakeData, update: () => {} };
-                    }
+                    for(let i=0; i<32; i++) jarvisAnalyserData[i] = Math.random() * 255;
                 }, 50);
             }
 
@@ -306,10 +331,7 @@
                 isOrbSimulating = false;
                 clearInterval(window.simuladorOrb);
                 window.simuladorOrb = null;
-                if(visualizer && visualizer.sphere) {
-                    visualizer.outputAnalyser = { data: new Uint8Array(32), update: () => {} };
-                    visualizer.inputAnalyser = { data: new Uint8Array(32), update: () => {} };
-                }
+                jarvisAnalyserData.fill(0);
                 if(onEndCallback) onEndCallback();
             };
             window.speechSynthesis.speak(utterance);
@@ -317,6 +339,8 @@
 
         window.iniciarJarvis = function() {
             if(currentState !== "OFF") return;
+            
+            initMicrophoneAudio(); // Pede acesso ao mic para a orbe pular
             
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { alert("Reconhecimento não suportado no seu navegador."); return; }
