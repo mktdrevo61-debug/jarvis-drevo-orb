@@ -5,7 +5,6 @@
     <title>DRevo Jarvis - IA</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Import Maps para Three.js e Lit -->
     <script type="importmap">
       {
         "imports": {
@@ -132,7 +131,6 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // LÓGICA DO ORB 3D
         class Analyser {
             constructor(node) {
                 this.analyser = node.context.createAnalyser();
@@ -216,24 +214,18 @@
           render() { return html`<canvas></canvas>`; }
         }
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
-
-        // ==========================================
-        // LÓGICA DE INTELIGÊNCIA ARTIFICIAL E VOZ
-        // ==========================================
         
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
         const GEMINI_API_KEY = "AIzaSyA_3oN4CleMzd-80gCArKq31zZFyKASPlU";
         
-        // Estados: OFF, STANDBY, LISTENING_COMMAND, CONFIRMING, THINKING, SAVING
         let currentState = "OFF";
         let pendingData = { item: "", quantity: 1 };
         let isOrbSimulating = false;
         let isJarvisSpeaking = false;
         let globalRecognition = null;
 
-        // Função para perguntar ao Cérebro (Gemini)
         async function askGemini(promptText) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
             const payload = {
                 contents: [{ parts: [{ 
                     text: "Você é o Jarvis, a inteligência artificial criada por Tony Stark, mas você foi adaptado para a empresa DRevo. Responda de forma extremamente curta, sarcástica, altamente tecnológica e muito prestativa. Chame o usuário de 'Senhor'. A pergunta do usuário é: " + promptText 
@@ -248,12 +240,9 @@
             }
         }
 
-        // Função para Extrair Números
         function extractData(spokenText) {
             const wordToNumber = { "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, "nove":9, "dez":10 };
-            
             let cleanText = spokenText.replace(/jarvis/g, "").replace(/anote/g, "").replace(/planilha/g, "").replace(/adicionar/g, "").replace(/estoque/g, "").trim();
-            
             let words = cleanText.split(' ');
             let quantity = 1;
             let itemText = cleanText;
@@ -287,7 +276,6 @@
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
-            // Voz Homem de Ferro: Grave e Levemente Lenta
             utterance.pitch = 0.1; 
             utterance.rate = 0.95;
 
@@ -432,5 +420,4 @@
         }
     </script>
 </body>
-</html>
 </html>
