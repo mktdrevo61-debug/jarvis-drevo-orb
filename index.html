@@ -221,15 +221,13 @@
         
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
         
-        // Proteção DRevo contra vazamento: Salvar chave apenas no celular/computador do usuário
+        // Proteção DRevo contra vazamento
         let GEMINI_API_KEY = localStorage.getItem('drevo_gemini_key');
-        if (!GEMINI_API_KEY || GEMINI_API_KEY === "null") {
-            GEMINI_API_KEY = prompt("🔐 SISTEMA DREVO: Cole sua nova chave da API do Google Gemini aqui para ligar o Cérebro IA (Ela ficará salva apenas no seu aparelho e não no GitHub):");
-            if (GEMINI_API_KEY && GEMINI_API_KEY.trim() !== "") {
-                localStorage.setItem('drevo_gemini_key', GEMINI_API_KEY.trim());
-            }
-        }
+        let ELEVENLABS_API_KEY = localStorage.getItem('drevo_elevenlabs_key');
         
+        // ID da voz do Jarvis (Sotaque Britânico Masculino Elegante)
+        const VOICE_ID = "JBFqnCBcs6IxYk6v8gWE"; 
+
         // Estados: OFF, STANDBY, LISTENING_COMMAND, CONFIRMING, THINKING, SAVING
         let currentState = "OFF";
         let pendingData = { item: "", quantity: 1 };
@@ -288,35 +286,88 @@
             if(outputText !== null) outputEl.innerText = outputText;
         }
 
-        function speakJarvis(text, onEndCallback) {
+        // NOVA FUNÇÃO DE VOZ: ELEVENLABS (VOZ DE CINEMA)
+        async function speakJarvis(text, onEndCallback) {
             isJarvisSpeaking = true;
             if (globalRecognition) { try { globalRecognition.stop(); } catch(e){} }
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'pt-BR';
-            // Voz Homem de Ferro: Grave e Levemente Lenta
-            utterance.pitch = 0.1; 
-            utterance.rate = 0.95;
+            // Se a chave não existir, usa a voz robótica nativa como fallback
+            if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY === "null") {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'pt-BR';
+                utterance.pitch = 0.2; utterance.rate = 1.15;
+                utterance.onend = () => { finalizeSpeech(onEndCallback); };
+                window.speechSynthesis.speak(utterance);
+                return;
+            }
 
-            const voices = window.speechSynthesis.getVoices();
-            const jarvisVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Antonio') || v.name.includes('Male') || v.name.includes('Masculino'));
-            if (jarvisVoice) utterance.voice = jarvisVoice;
+            try {
+                // Chama a API da ElevenLabs
+                const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'xi-api-key': ELEVENLABS_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        model_id: "eleven_multilingual_v2", // Suporta português perfeito
+                        voice_settings: {
+                            stability: 0.5,
+                            similarity_boost: 0.8
+                        }
+                    })
+                });
 
-            utterance.onend = () => {
-                isJarvisSpeaking = false;
-                if(onEndCallback) onEndCallback();
-                if (globalRecognition && currentState !== "OFF") {
-                    try { globalRecognition.start(); } catch(e){}
+                if (!response.ok) {
+                    throw new Error("Erro na ElevenLabs");
                 }
-            };
-            window.speechSynthesis.speak(utterance);
+
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                
+                audio.onended = () => {
+                    finalizeSpeech(onEndCallback);
+                    URL.revokeObjectURL(audioUrl); // Libera memória
+                };
+                
+                audio.play();
+            } catch (error) {
+                console.error("Falha ao gerar voz da ElevenLabs:", error);
+                // Fallback para voz nativa caso a ElevenLabs falhe
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'pt-BR';
+                utterance.pitch = 0.2; utterance.rate = 1.15;
+                utterance.onend = () => { finalizeSpeech(onEndCallback); };
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function finalizeSpeech(onEndCallback) {
+            isJarvisSpeaking = false;
+            if(onEndCallback) onEndCallback();
+            if (globalRecognition && currentState !== "OFF") {
+                try { globalRecognition.start(); } catch(e){}
+            }
         }
 
         window.iniciarJarvis = function() {
+            // Pede as chaves na primeira vez que clicar na tela
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "null") {
+                GEMINI_API_KEY = prompt("🔐 SISTEMA DREVO: Cole sua nova chave do GEMINI (Cérebro):");
+                if (GEMINI_API_KEY) localStorage.setItem('drevo_gemini_key', GEMINI_API_KEY.trim());
+            }
+            if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY === "null") {
+                ELEVENLABS_API_KEY = prompt("🎙️ SISTEMA DREVO: Cole sua chave da ELEVENLABS (Voz de Cinema):");
+                if (ELEVENLABS_API_KEY) localStorage.setItem('drevo_elevenlabs_key', ELEVENLABS_API_KEY.trim());
+            }
+
             if(currentState !== "OFF") return;
             
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) { alert("Reconhecimento não suportado neste navegador."); return; }
+            if (!SpeechRecognition) { alert("Reconhecimento não suportado."); return; }
             
             globalRecognition = new SpeechRecognition();
             globalRecognition.lang = 'pt-BR';
@@ -325,7 +376,7 @@
 
             currentState = "STANDBY";
             updateUI("MODO STANDBY ATIVO", "Diga 'Jarvis' para acordar", "#00ff66");
-            speakJarvis("Sistemas operacionais ativados, senhor.");
+            speakJarvis("Sistemas ativados, senhor.");
 
             globalRecognition.onstart = () => {
                 const visualizer = document.getElementById('orb-visualizer');
@@ -343,7 +394,7 @@
                         }
                     }, 50);
                 }
-
+                
                 if(currentState === "STANDBY") {
                     updateUI("STANDBY", "Diga 'Jarvis'...", "#00ff66");
                 } else if(currentState === "LISTENING_COMMAND") {
@@ -361,32 +412,35 @@
                 const text = event.results[0][0].transcript.trim().toLowerCase();
                 document.getElementById('output').innerText = text;
 
+                // Lógica Inteligente de Roteamento (Planilha vs Bate-Papo)
+                const isQuestion = /^(como|qual|quem|onde|por que|o que|explique|me diga|jarvis como|jarvis qual|jarvis o que)/.test(text);
+
                 if (currentState === "STANDBY") {
                     if (text.includes("jarvis")) {
-                        if (text.includes("anote") || text.includes("planilha") || text.includes("estoque") || text.includes("adicionar")) {
-                            currentState = "LISTENING_COMMAND"; 
-                            processPlanilhaCommand(text);
-                        } 
-                        else if (text.length > 15) {
+                        if (text.length < 10) {
+                            currentState = "LISTENING_COMMAND";
+                            speakJarvis("Às ordens.");
+                        }
+                        else if (isQuestion) {
                             currentState = "THINKING";
                             updateUI("PENSANDO...", "Consultando banco de dados...", "#ff00ff");
                             const resposta = await askGemini(text);
                             speakJarvis(resposta, () => { currentState = "STANDBY"; });
                         }
                         else {
-                            currentState = "LISTENING_COMMAND";
-                            speakJarvis("Às ordens, senhor.");
+                            currentState = "LISTENING_COMMAND"; 
+                            processPlanilhaCommand(text);
                         }
                     }
                 } 
                 else if (currentState === "LISTENING_COMMAND") {
-                    if (text.includes("anote") || text.includes("planilha") || text.includes("estoque") || text.includes("adicionar")) {
-                        processPlanilhaCommand(text);
-                    } else {
+                    if (isQuestion) {
                         currentState = "THINKING";
                         updateUI("PENSANDO...", "Processando via Gemini...", "#ff00ff");
                         const resposta = await askGemini(text);
                         speakJarvis(resposta, () => { currentState = "STANDBY"; });
+                    } else {
+                        processPlanilhaCommand(text);
                     }
                 } 
                 else if (currentState === "CONFIRMING") {
