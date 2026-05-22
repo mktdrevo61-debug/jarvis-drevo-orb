@@ -140,7 +140,6 @@
         let ignoreRecognition = false;
         let globalRecognition = null;
         
-        let micAnalyser = null;
         let micDataArray = new Uint8Array(32);
         let jarvisAnalyserData = new Uint8Array(32);
         let sphereMesh = null;
@@ -204,16 +203,15 @@
 
                 function animate() {
                     requestAnimationFrame(animate);
-                    
-                    if(micAnalyser) {
-                        micAnalyser.getByteFrequencyData(micDataArray);
-                    } else {
-                        micDataArray.fill(0);
-                    }
 
                     const t = performance.now(); 
                     const dt = Math.min((t - prevTime) / (1000 / 60), 2.0); 
                     prevTime = t;
+
+                    // Animação suave constante para parecer "vivo"
+                    for(let i=0; i<32; i++) {
+                        micDataArray[i] = 15 + Math.sin(t * 0.002 + i * 0.5) * 15;
+                    }
 
                     if (sphereMesh && sphereMesh.material.userData.shader) {
                       const outData = jarvisAnalyserData;
@@ -248,19 +246,6 @@
 
         // Executar a inicialização da orbe imediatamente
         initBulletproofOrb();
-
-        async function initMicrophoneAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(stream);
-                micAnalyser = audioContext.createAnalyser();
-                micAnalyser.fftSize = 32;
-                source.connect(micAnalyser);
-            } catch (err) {
-                console.log("Microfone de áudio não liberado para a orbe", err);
-            }
-        }
 
         // ==========================================
         // LÓGICA DO ASSISTENTE
@@ -309,6 +294,8 @@
         }
 
         function speakJarvis(text, onEndCallback) {
+            window.speechSynthesis.cancel(); // Limpa filas antigas que podem travar o Android
+
             ignoreRecognition = true;
             isOrbSimulating = true;
             
@@ -327,21 +314,38 @@
             const jarvisVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Antonio') || v.name.includes('Male') || v.name.includes('Masculino'));
             if (jarvisVoice) utterance.voice = jarvisVoice;
 
-            utterance.onend = () => {
+            // Timeout de segurança: Chrome no Android tem um bug conhecido onde 'onend' nunca é disparado se a voz falhar!
+            let durationSafeLimit = Math.max(2000, text.length * 150);
+            let safetyReset = setTimeout(() => {
+                resetState();
+                if(onEndCallback) onEndCallback();
+            }, durationSafeLimit);
+
+            function resetState() {
                 ignoreRecognition = false;
                 isOrbSimulating = false;
                 clearInterval(window.simuladorOrb);
                 window.simuladorOrb = null;
                 jarvisAnalyserData.fill(0);
+            }
+
+            utterance.onend = () => {
+                clearTimeout(safetyReset);
+                resetState();
                 if(onEndCallback) onEndCallback();
             };
+
+            utterance.onerror = () => {
+                clearTimeout(safetyReset);
+                resetState();
+                if(onEndCallback) onEndCallback();
+            };
+
             window.speechSynthesis.speak(utterance);
         }
 
         window.iniciarJarvis = function() {
             if(currentState !== "OFF") return;
-            
-            initMicrophoneAudio(); // Pede acesso ao mic para a orbe pular
             
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { alert("Reconhecimento não suportado no seu navegador."); return; }
