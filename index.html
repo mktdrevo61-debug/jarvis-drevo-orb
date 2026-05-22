@@ -6,146 +6,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body, html { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: #030305; 
-            color: #00f2ff; 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #030305; color: #00f2ff; 
             font-family: 'Segoe UI', system-ui, sans-serif; 
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            overflow: hidden; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
 
         .drevo-watermark {
-            position: absolute;
-            bottom: 20px;
-            right: 25px;
-            font-size: 14px;
-            font-weight: 800;
-            letter-spacing: 5px;
-            color: rgba(255, 170, 0, 0.4);
-            text-transform: uppercase;
-            z-index: 5;
-            pointer-events: none;
+            position: absolute; bottom: 20px; right: 25px;
+            font-size: 14px; font-weight: 800; letter-spacing: 5px;
+            color: rgba(255, 170, 0, 0.4); text-transform: uppercase;
+            z-index: 5; pointer-events: none;
         }
 
         #ui-layer {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(5, 10, 20, 0.45);
-            backdrop-filter: blur(20px);
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+            background: rgba(5, 10, 20, 0.45); backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 242, 255, 0.25);
-            border-top: 1px solid rgba(0, 242, 255, 0.5);
-            border-radius: 24px;
-            padding: 35px 40px;
-            text-align: center;
-            z-index: 10;
+            border: 1px solid rgba(0, 242, 255, 0.25); border-top: 1px solid rgba(0, 242, 255, 0.5);
+            border-radius: 24px; padding: 35px 40px; text-align: center; z-index: 10;
             box-shadow: 0 15px 50px rgba(0,0,0,0.6), inset 0 0 20px rgba(0, 242, 255, 0.05);
-            width: 85%;
-            max-width: 500px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 85%; max-width: 500px;
         }
 
         .drevo-logo {
-            font-size: 11px;
-            letter-spacing: 4px;
-            color: #ffaa00;
-            text-transform: uppercase;
-            margin-bottom: -5px;
-            font-weight: 800;
-            opacity: 0.9;
+            font-size: 11px; letter-spacing: 4px; color: #ffaa00;
+            text-transform: uppercase; margin-bottom: -5px; font-weight: 800; opacity: 0.9;
         }
 
         h1 { 
-            margin: 5px 0 15px 0; 
-            font-size: 26px; 
-            letter-spacing: 3px; 
-            font-weight: 300; 
-            color: #fff;
-            text-shadow: 0 0 15px rgba(0, 242, 255, 0.8); 
+            margin: 5px 0 15px 0; font-size: 26px; letter-spacing: 3px; 
+            font-weight: 300; color: #fff; text-shadow: 0 0 15px rgba(0, 242, 255, 0.8); 
         }
-        
         h1 strong { font-weight: 700; color: #00f2ff; }
 
         #status { 
-            letter-spacing: 2px; 
-            font-weight: 700; 
-            font-size: 13px; 
-            color: #ffaa00; 
-            margin-bottom: 15px; 
-            text-transform: uppercase;
+            letter-spacing: 2px; font-weight: 700; font-size: 13px; 
+            color: #ffaa00; margin-bottom: 15px; text-transform: uppercase;
         }
 
         #output { 
-            font-size: 18px; 
-            color: #e0faff; 
-            font-weight: 400; 
-            min-height: 25px; 
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 18px; color: #e0faff; font-weight: 400; 
+            min-height: 25px; background: rgba(0, 0, 0, 0.3); padding: 15px;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
         }
         
-        /* =========================================
-           NOVA ORBE 3D HOLOGRÁFICA EM CSS PURO
-           (100% à prova de falhas em Android)
-           ========================================= */
         #orb-visualizer { 
-            position: absolute; 
-            top: 45%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px; 
-            height: 300px; 
-            z-index: 1; 
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 300px; z-index: 1; pointer-events: none;
+            display: flex; align-items: center; justify-content: center;
         }
 
         .css-orb {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
+            width: 140px; height: 140px; border-radius: 50%;
             background: radial-gradient(circle at 35% 35%, #00ffff 0%, #0077ff 30%, #000033 80%);
-            box-shadow: 
-                0 0 50px rgba(0, 242, 255, 0.5),
-                inset 0 0 30px rgba(255, 255, 255, 0.6),
-                inset -20px -20px 40px rgba(0, 0, 0, 0.9);
-            position: relative;
-            transform-style: preserve-3d;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9);
+            position: relative; transform-style: preserve-3d;
             transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            animation: float 4s ease-in-out infinite;
         }
 
-        /* Anéis Holográficos */
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-15px) scale(1.02); }
+            100% { transform: translateY(0px) scale(1); }
+        }
+
         .css-orb::before {
-            content: '';
-            position: absolute;
-            top: -15%; left: -15%; right: -15%; bottom: -15%;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            border-top-color: rgba(0, 242, 255, 0.9);
-            border-bottom-color: rgba(0, 242, 255, 0.4);
-            animation: rotateOrb 3s linear infinite;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            content: ''; position: absolute; top: -15%; left: -15%; right: -15%; bottom: -15%;
+            border-radius: 50%; border: 3px solid transparent;
+            border-top-color: rgba(0, 242, 255, 0.9); border-bottom-color: rgba(0, 242, 255, 0.4);
+            animation: rotateOrb 3s linear infinite; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
         }
 
         .css-orb::after {
-            content: '';
-            position: absolute;
-            top: -30%; left: -30%; right: -30%; bottom: -30%;
-            border-radius: 50%;
-            border: 1px solid transparent;
-            border-left-color: rgba(0, 150, 255, 0.6);
-            border-right-color: rgba(0, 150, 255, 0.2);
+            content: ''; position: absolute; top: -30%; left: -30%; right: -30%; bottom: -30%;
+            border-radius: 50%; border: 1px solid transparent;
+            border-left-color: rgba(0, 150, 255, 0.6); border-right-color: rgba(0, 150, 255, 0.2);
             animation: rotateOrbReverse 6s linear infinite;
         }
 
@@ -183,36 +121,23 @@
 
         let currentState = "OFF";
         let pendingData = { item: "", quantity: 1, category: "" };
-        let isOrbSimulating = false;
         let ignoreRecognition = false;
         let globalRecognition = null;
-        let jarvisAnalyserData = new Uint8Array(32);
+        let isSpeaking = false;
 
-        // Animação da Orbe CSS (100% de certeza que vai renderizar)
         const orb = document.getElementById('holographic-orb');
+
         function animateCssOrb() {
-            requestAnimationFrame(animateCssOrb);
-            let scale = 1;
-            let glow = 50;
-            
-            if (jarvisAnalyserData[0] > 0) {
-                // Pulsando quando o Jarvis fala
-                let sum = 0;
-                for(let i=0; i<jarvisAnalyserData.length; i++) sum += jarvisAnalyserData[i];
-                let avg = sum / jarvisAnalyserData.length;
-                scale = 1 + (avg / 255) * 0.3;
-                glow = 50 + (avg / 255) * 120;
-            } else {
-                // Respiração suave (Idle)
-                const t = performance.now();
-                scale = 1 + Math.sin(t * 0.002) * 0.03;
-                glow = 50 + Math.sin(t * 0.002) * 15;
-            }
-            
-            if(orb) {
+            if (!orb) return;
+            if (isSpeaking) {
+                let scale = 1 + Math.random() * 0.2;
                 orb.style.transform = `scale(${scale})`;
-                orb.style.boxShadow = `0 0 ${glow}px rgba(0, 242, 255, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9)`;
+                orb.style.boxShadow = `0 0 ${80 + Math.random()*50}px rgba(0, 242, 255, 1), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9)`;
+            } else {
+                orb.style.transform = `scale(1)`;
+                orb.style.boxShadow = `0 0 50px rgba(0, 242, 255, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9)`;
             }
+            requestAnimationFrame(animateCssOrb);
         }
         animateCssOrb();
 
@@ -251,25 +176,17 @@
         }
 
         function updateUI(statusText, outputText, color) {
-            const statusEl = document.getElementById('status');
-            const outputEl = document.getElementById('output');
-            statusEl.innerText = statusText;
-            statusEl.style.color = color;
-            if(outputText !== null) outputEl.innerText = outputText;
+            document.getElementById('status').innerText = statusText;
+            document.getElementById('status').style.color = color;
+            if(outputText !== null) document.getElementById('output').innerText = outputText;
         }
 
         function speakJarvis(text, onEndCallback) {
             window.speechSynthesis.cancel();
-
-            ignoreRecognition = true;
-            isOrbSimulating = true;
             
-            if (!window.simuladorOrb) {
-                window.simuladorOrb = setInterval(() => {
-                    for(let i=0; i<32; i++) jarvisAnalyserData[i] = Math.random() * 255;
-                }, 50);
-            }
-
+            ignoreRecognition = true;
+            isSpeaking = true;
+            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
             utterance.pitch = 0.2; 
@@ -287,10 +204,7 @@
 
             function resetState() {
                 ignoreRecognition = false;
-                isOrbSimulating = false;
-                clearInterval(window.simuladorOrb);
-                window.simuladorOrb = null;
-                jarvisAnalyserData.fill(0);
+                isSpeaking = false;
             }
 
             utterance.onend = () => {
