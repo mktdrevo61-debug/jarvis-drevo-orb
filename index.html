@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>DRevo Jarvis - Produção</title>
+    <title>DRevo Jarvis - IA</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Import Maps para Three.js e Lit -->
@@ -34,7 +34,6 @@
             justify-content: center;
         }
 
-        /* Watermark DRevo */
         .drevo-watermark {
             position: absolute;
             bottom: 20px;
@@ -48,7 +47,6 @@
             pointer-events: none;
         }
 
-        /* Glassmorphism UI */
         #ui-layer {
             position: absolute;
             bottom: 50px;
@@ -67,11 +65,6 @@
             width: 85%;
             max-width: 500px;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        #ui-layer:hover {
-            border: 1px solid rgba(0, 242, 255, 0.5);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.6), 0 0 30px rgba(0, 242, 255, 0.15);
         }
 
         .drevo-logo {
@@ -93,10 +86,7 @@
             text-shadow: 0 0 15px rgba(0, 242, 255, 0.8); 
         }
         
-        h1 strong {
-            font-weight: 700;
-            color: #00f2ff;
-        }
+        h1 strong { font-weight: 700; color: #00f2ff; }
 
         #status { 
             letter-spacing: 2px; 
@@ -104,7 +94,6 @@
             font-size: 13px; 
             color: #ffaa00; 
             margin-bottom: 15px; 
-            transition: color 0.3s; 
             text-transform: uppercase;
         }
 
@@ -126,16 +115,14 @@
 <body>
 
     <div class="drevo-watermark">DREVO SYSTEMS</div>
-
     <gdm-live-audio-visuals-3d id="orb-visualizer"></gdm-live-audio-visuals-3d>
-    
     <div id="trigger-zone" onclick="iniciarJarvis()"></div>
     
     <div id="ui-layer">
-        <div class="drevo-logo">Desenvolvido para DRevo</div>
-        <h1>JARVIS <strong>PRO</strong></h1>
-        <p id="status">CLIQUE NA TELA PARA INICIAR</p>
-        <div id="output">Aguardando comando...</div>
+        <div class="drevo-logo">Inteligência Artificial DRevo</div>
+        <h1>JARVIS <strong>A.I.</strong></h1>
+        <p id="status">CLIQUE NA TELA PARA ACORDAR</p>
+        <div id="output">Ouvindo em Standby...</div>
     </div>
 
     <script type="module">
@@ -145,6 +132,7 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
+        // LÓGICA DO ORB 3D
         class Analyser {
             constructor(node) {
                 this.analyser = node.context.createAnalyser();
@@ -161,61 +149,20 @@
         const backdropFS = `precision highp float; out vec4 fragmentColor; uniform vec2 resolution; uniform float rand; void main() { float aspectRatio = resolution.x / resolution.y; vec2 vUv = gl_FragCoord.xy / resolution; float noise = (fract(sin(dot(vUv, vec2(12.9898 + rand,78.233)*2.0)) * 43758.5453)); vUv -= .5; vUv.x *= aspectRatio; float factor = 4.; float d = factor * length(vUv); vec3 from = vec3(3.) / 255.; vec3 to = vec3(16., 12., 20.) / 2550.; fragmentColor = vec4(mix(from, to, d) + .005 * noise, 1.); }`;
 
         const sphereVS = `#define STANDARD
-        varying vec3 vViewPosition;
-        #ifdef USE_TRANSMISSION
-          varying vec3 vWorldPosition;
-        #endif
-        #include <common>
-        #include <batching_pars_vertex>
-        #include <uv_pars_vertex>
-        #include <displacementmap_pars_vertex>
-        #include <color_pars_vertex>
-        #include <fog_pars_vertex>
-        #include <normal_pars_vertex>
-        #include <morphtarget_pars_vertex>
-        #include <skinning_pars_vertex>
-        #include <shadowmap_pars_vertex>
-        #include <logdepthbuf_pars_vertex>
-        #include <clipping_planes_pars_vertex>
-
+        varying vec3 vViewPosition; #ifdef USE_TRANSMISSION varying vec3 vWorldPosition; #endif
+        #include <common> #include <batching_pars_vertex> #include <uv_pars_vertex> #include <displacementmap_pars_vertex> #include <color_pars_vertex> #include <fog_pars_vertex> #include <normal_pars_vertex> #include <morphtarget_pars_vertex> #include <skinning_pars_vertex> #include <shadowmap_pars_vertex> #include <logdepthbuf_pars_vertex> #include <clipping_planes_pars_vertex>
         uniform float time; uniform vec4 inputData; uniform vec4 outputData;
         vec3 calc( vec3 pos ) { vec3 dir = normalize( pos ); vec3 p = dir + vec3( time, 0., 0. ); return pos + 1. * inputData.x * inputData.y * dir * (.5 + .5 * sin(inputData.z * pos.x + time)) + 1. * outputData.x * outputData.y * dir * (.5 + .5 * sin(outputData.z * pos.y + time)); }
         vec3 spherical( float r, float theta, float phi ) { return r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi)); }
-
         void main() {
-          #include <uv_vertex>
-          #include <color_vertex>
-          #include <morphinstance_vertex>
-          #include <morphcolor_vertex>
-          #include <batching_vertex>
-          #include <beginnormal_vertex>
-          #include <morphnormal_vertex>
-          #include <skinbase_vertex>
-          #include <skinnormal_vertex>
-          #include <defaultnormal_vertex>
-          #include <normal_vertex>
-          #include <begin_vertex>
-
+          #include <uv_vertex> #include <color_vertex> #include <morphinstance_vertex> #include <morphcolor_vertex> #include <batching_vertex> #include <beginnormal_vertex> #include <morphnormal_vertex> #include <skinbase_vertex> #include <skinnormal_vertex> #include <defaultnormal_vertex> #include <normal_vertex> #include <begin_vertex>
           float inc = 0.001; float r = length( position ); float theta = ( uv.x + 0.5 ) * 2. * PI; float phi = -( uv.y + 0.5 ) * PI;
           vec3 np = calc( spherical( r, theta, phi ) );
-          vec3 tangent = normalize( calc( spherical( r, theta + inc, phi ) ) - np );
-          vec3 bitangent = normalize( calc( spherical( r, theta, phi + inc ) ) - np );
+          vec3 tangent = normalize( calc( spherical( r, theta + inc, phi ) ) - np ); vec3 bitangent = normalize( calc( spherical( r, theta, phi + inc ) ) - np );
           transformedNormal = -normalMatrix * normalize( cross( tangent, bitangent ) );
           vNormal = normalize( transformedNormal ); transformed = np;
-
-          #include <morphtarget_vertex>
-          #include <skinning_vertex>
-          #include <displacementmap_vertex>
-          #include <project_vertex>
-          #include <logdepthbuf_vertex>
-          #include <clipping_planes_vertex>
-          vViewPosition = - mvPosition.xyz;
-          #include <worldpos_vertex>
-          #include <shadowmap_vertex>
-          #include <fog_vertex>
-          #ifdef USE_TRANSMISSION
-            vWorldPosition = worldPosition.xyz;
-          #endif
+          #include <morphtarget_vertex> #include <skinning_vertex> #include <displacementmap_vertex> #include <project_vertex> #include <logdepthbuf_vertex> #include <clipping_planes_vertex>
+          vViewPosition = - mvPosition.xyz; #include <worldpos_vertex> #include <shadowmap_vertex> #include <fog_vertex> #ifdef USE_TRANSMISSION vWorldPosition = worldPosition.xyz; #endif
         }`;
 
         class GdmLiveAudioVisuals3D extends LitElement {
@@ -271,47 +218,61 @@
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
         // ==========================================
-        // 4. LÓGICA DE INTELIGÊNCIA DO DREVO JARVIS
+        // LÓGICA DE INTELIGÊNCIA ARTIFICIAL E VOZ
         // ==========================================
         
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
+        const GEMINI_API_KEY = "AIzaSyA_3oN4CleMzd-80gCArKq31zZFyKASPlU";
         
-        // Estados: IDLE, LISTENING_ITEM, CONFIRMING, SAVING
-        let currentState = "IDLE";
+        // Estados: OFF, STANDBY, LISTENING_COMMAND, CONFIRMING, THINKING, SAVING
+        let currentState = "OFF";
         let pendingData = { item: "", quantity: 1 };
         let isOrbSimulating = false;
+        let isJarvisSpeaking = false;
+        let globalRecognition = null;
 
-        // Função para Extrair Números e Palavras Inteligentes
-        function extractData(spokenText) {
-            const wordToNumber = { 
-                "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, 
-                "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, 
-                "nove":9, "dez":10, "onze":11, "doze":12, "vinte":20, "cem":100 
+        // Função para perguntar ao Cérebro (Gemini)
+        async function askGemini(promptText) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const payload = {
+                contents: [{ parts: [{ 
+                    text: "Você é o Jarvis, a inteligência artificial criada por Tony Stark, mas você foi adaptado para a empresa DRevo. Responda de forma extremamente curta, sarcástica, altamente tecnológica e muito prestativa. Chame o usuário de 'Senhor'. A pergunta do usuário é: " + promptText 
+                }] }]
             };
+            try {
+                const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text.replace(/\*/g, ''); 
+            } catch (e) {
+                return "Desculpe senhor, meus sistemas cognitivos em nuvem estão inacessíveis no momento.";
+            }
+        }
+
+        // Função para Extrair Números
+        function extractData(spokenText) {
+            const wordToNumber = { "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, "nove":9, "dez":10 };
             
-            let words = spokenText.trim().split(' ');
+            let cleanText = spokenText.replace(/jarvis/g, "").replace(/anote/g, "").replace(/planilha/g, "").replace(/adicionar/g, "").replace(/estoque/g, "").trim();
+            
+            let words = cleanText.split(' ');
             let quantity = 1;
-            let itemText = spokenText;
+            let itemText = cleanText;
 
             if (words.length > 0) {
                 let firstWord = words[0].toLowerCase();
-                // Tenta ver se a primeira palavra é um número explícito (Ex: "10")
                 if (!isNaN(parseInt(firstWord))) {
                     quantity = parseInt(firstWord);
-                    words.shift(); // Remove o número da frase
+                    words.shift();
                     itemText = words.join(' ');
-                } 
-                // Tenta ver se é um número por extenso (Ex: "cinco")
-                else if (wordToNumber[firstWord]) {
+                } else if (wordToNumber[firstWord]) {
                     quantity = wordToNumber[firstWord];
-                    words.shift(); // Remove a palavra da frase
+                    words.shift();
                     itemText = words.join(' ');
                 }
             }
             return { quantity: quantity, item: itemText.trim() };
         }
 
-        // Função para alterar a tela e as cores
         function updateUI(statusText, outputText, color) {
             const statusEl = document.getElementById('status');
             const outputEl = document.getElementById('output');
@@ -320,44 +281,46 @@
             if(outputText !== null) outputEl.innerText = outputText;
         }
 
-        // Função para o Jarvis Falar
         function speakJarvis(text, onEndCallback) {
+            isJarvisSpeaking = true;
+            if (globalRecognition) { try { globalRecognition.stop(); } catch(e){} }
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
-            utterance.pitch = 0.4; // Voz Grave DRevo
-            utterance.rate = 1.05;
+            // Voz Homem de Ferro: Grave e Levemente Lenta
+            utterance.pitch = 0.1; 
+            utterance.rate = 0.95;
 
-            // Busca a voz masculina
             const voices = window.speechSynthesis.getVoices();
-            const jarvisVoice = voices.find(v => v.name.includes('Antonio') || v.name.includes('UK English Male') || v.name.includes('Masculino'));
+            const jarvisVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Antonio') || v.name.includes('Male') || v.name.includes('Masculino'));
             if (jarvisVoice) utterance.voice = jarvisVoice;
 
-            if(onEndCallback) utterance.onend = onEndCallback;
+            utterance.onend = () => {
+                isJarvisSpeaking = false;
+                if(onEndCallback) onEndCallback();
+                if (globalRecognition && currentState !== "OFF") {
+                    try { globalRecognition.start(); } catch(e){}
+                }
+            };
             window.speechSynthesis.speak(utterance);
         }
 
-        // Inicia o processo quando o usuário clica
         window.iniciarJarvis = function() {
-            if(currentState !== "IDLE") return;
-            startListening("LISTENING_ITEM");
-        };
-
-        function startListening(newState) {
+            if(currentState !== "OFF") return;
+            
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("Reconhecimento não suportado neste navegador.");
-                return;
-            }
+            if (!SpeechRecognition) { alert("Reconhecimento não suportado neste navegador."); return; }
+            
+            globalRecognition = new SpeechRecognition();
+            globalRecognition.lang = 'pt-BR';
+            globalRecognition.continuous = false; 
+            globalRecognition.interimResults = false; 
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'pt-BR';
-            recognition.continuous = false;
-            recognition.interimResults = true;
+            currentState = "STANDBY";
+            updateUI("MODO STANDBY ATIVO", "Diga 'Jarvis' para acordar", "#00ff66");
+            speakJarvis("Sistemas operacionais ativados, senhor.");
 
-            currentState = newState;
-
-            recognition.onstart = () => {
-                // Inicia o simulador do Orb (Efeito visual de ouvir)
+            globalRecognition.onstart = () => {
                 const visualizer = document.getElementById('orb-visualizer');
                 isOrbSimulating = true;
                 if (!window.simuladorOrb) {
@@ -374,89 +337,100 @@
                     }, 50);
                 }
 
-                // Atualiza a UI baseada no Estado
-                if(currentState === "LISTENING_ITEM") {
-                    updateUI("OUVINDO...", "Diga a quantidade e o item (ex: '2 dobradiças')", "#00ff66");
+                if(currentState === "STANDBY") {
+                    updateUI("STANDBY", "Diga 'Jarvis'...", "#00ff66");
+                } else if(currentState === "LISTENING_COMMAND") {
+                    updateUI("OUVINDO COMANDO", "Pode falar, senhor...", "#00f2ff");
                 } else if(currentState === "CONFIRMING") {
-                    updateUI("AGUARDANDO CONFIRMAÇÃO", "Diga: 'Sim', 'Confirmo' ou 'Não'", "#ffaa00");
+                    updateUI("AGUARDANDO CONFIRMAÇÃO", "Diga: 'Sim' ou 'Não'", "#ffaa00");
                 }
             };
 
-            recognition.onerror = (event) => {
+            globalRecognition.onerror = (event) => {
                 isOrbSimulating = false;
-                if(event.error === 'no-speech') {
-                    updateUI("NENHUMA VOZ DETECTADA", "Clique novamente para tentar", "#ffaa00");
-                } else {
-                    updateUI("ERRO", event.error, "#ff0000");
-                }
-                currentState = "IDLE";
             };
 
-            recognition.onresult = (event) => {
-                document.getElementById('output').innerText = event.results[0][0].transcript;
-            };
+            globalRecognition.onresult = async (event) => {
+                const text = event.results[0][0].transcript.trim().toLowerCase();
+                document.getElementById('output').innerText = text;
 
-            recognition.onend = () => {
-                isOrbSimulating = false;
-                const text = document.getElementById('output').innerText.trim().toLowerCase();
-                
-                // Trata o caso de finalização vazia
-                if (!text || text.includes("diga a quantidade") || text.includes("diga: 'sim'") || text.includes("aguardando")) {
-                    updateUI("CLIQUE PARA FALAR NOVAMENTE", "Aguardando...", "#00f2ff");
-                    currentState = "IDLE";
-                    return;
-                }
-
-                // Fluxo 1: Entendeu o Item, pede Confirmação
-                if (currentState === "LISTENING_ITEM") {
-                    const data = extractData(text);
-                    pendingData = data;
-                    
-                    updateUI("PROCESSANDO...", `Item: ${data.item} | Qtd: ${data.quantity}`, "#00f2ff");
-                    
-                    // Fala e liga o mic logo depois!
-                    speakJarvis(`Entendido. ${data.quantity} ${data.item}. Confirma?`, () => {
-                        startListening("CONFIRMING");
-                    });
-
+                if (currentState === "STANDBY") {
+                    if (text.includes("jarvis")) {
+                        if (text.includes("anote") || text.includes("planilha") || text.includes("estoque") || text.includes("adicionar")) {
+                            currentState = "LISTENING_COMMAND"; 
+                            processPlanilhaCommand(text);
+                        } 
+                        else if (text.length > 15) {
+                            currentState = "THINKING";
+                            updateUI("PENSANDO...", "Consultando banco de dados...", "#ff00ff");
+                            const resposta = await askGemini(text);
+                            speakJarvis(resposta, () => { currentState = "STANDBY"; });
+                        }
+                        else {
+                            currentState = "LISTENING_COMMAND";
+                            speakJarvis("Às ordens, senhor.");
+                        }
+                    }
                 } 
-                // Fluxo 2: Entendeu a Confirmação e vai Salvar (ou Cancelar)
+                else if (currentState === "LISTENING_COMMAND") {
+                    if (text.includes("anote") || text.includes("planilha") || text.includes("estoque") || text.includes("adicionar")) {
+                        processPlanilhaCommand(text);
+                    } else {
+                        currentState = "THINKING";
+                        updateUI("PENSANDO...", "Processando via Gemini...", "#ff00ff");
+                        const resposta = await askGemini(text);
+                        speakJarvis(resposta, () => { currentState = "STANDBY"; });
+                    }
+                } 
                 else if (currentState === "CONFIRMING") {
-                    
-                    if (text.includes("sim") || text.includes("confirma") || text.includes("correto") || text.includes("isso") || text.includes("pode salvar") || text.includes("ok")) {
-                        
+                    if (text.includes("sim") || text.includes("confirma") || text.includes("correto") || text.includes("ok")) {
                         currentState = "SAVING";
-                        updateUI("SALVANDO NA PLANILHA...", "Enviando dados da DRevo...", "#00f2ff");
-                        speakJarvis("Salvando na planilha.");
+                        updateUI("SALVANDO NA PLANILHA...", "Enviando para os servidores...", "#00f2ff");
+                        speakJarvis("Salvando registro, senhor.");
                         
                         fetch(SCRIPT_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
+                            method: 'POST', mode: 'no-cors',
                             body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, categoria: "Estoque" })
                         }).then(() => {
-                            updateUI("✅ ADICIONADO!", `${pendingData.quantity}x ${pendingData.item}`, "#00ff66");
-                            speakJarvis("Pronto, senhor.");
-                            currentState = "IDLE";
+                            updateUI("✅ ADICIONADO", `${pendingData.quantity}x ${pendingData.item}`, "#00ff66");
+                            speakJarvis("Pronto. Retornando ao modo de vigília.", () => { currentState = "STANDBY"; });
                         }).catch((e) => {
                             updateUI("ERRO AO SALVAR", e.message, "#ff0000");
-                            currentState = "IDLE";
+                            currentState = "STANDBY";
                         });
 
+                    } else if (text.includes("não") || text.includes("cancela")) {
+                        updateUI("CANCELADO", "Voltando a dormir.", "#ffaa00");
+                        speakJarvis("Cancelado. Voltando a ouvir o ambiente.", () => { currentState = "STANDBY"; });
                     } else {
-                        updateUI("AÇÃO CANCELADA", "Clique para começar novamente.", "#ffaa00");
-                        speakJarvis("Cancelado. Clique quando quiser anotar de novo.");
-                        currentState = "IDLE";
+                        speakJarvis("Não entendi a confirmação. Diga sim ou não.");
                     }
                 }
             };
 
-            // Inicia o microfone
-            try {
-                recognition.start();
-            } catch(e) {
-                currentState = "IDLE";
+            globalRecognition.onend = () => {
+                isOrbSimulating = false;
+                if (!isJarvisSpeaking && currentState !== "OFF") {
+                    try { globalRecognition.start(); } catch(e) {}
+                }
+            };
+
+            try { globalRecognition.start(); } catch(e) {}
+        };
+
+        function processPlanilhaCommand(text) {
+            const data = extractData(text);
+            if(data.item === "") {
+                speakJarvis("O que o senhor deseja anotar?");
+                currentState = "LISTENING_COMMAND";
+                return;
             }
+            pendingData = data;
+            currentState = "CONFIRMING";
+            updateUI("PROCESSANDO...", `Item: ${data.item} | Qtd: ${data.quantity}`, "#00f2ff");
+            speakJarvis(`O senhor disse ${data.quantity} ${data.item}. Posso confirmar no estoque?`);
         }
     </script>
 </body>
+</html>
 </html>
