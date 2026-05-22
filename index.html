@@ -118,8 +118,8 @@
     <div id="trigger-zone" onclick="iniciarJarvis()"></div>
     
     <div id="ui-layer">
-        <div class="drevo-logo">Inteligência Artificial DRevo</div>
-        <h1>JARVIS <strong>A.I.</strong></h1>
+        <div class="drevo-logo">Sistemas DRevo</div>
+        <h1>ESTOQUE <strong>A.I.</strong></h1>
         <p id="status">CLIQUE NA TELA PARA ACORDAR</p>
         <div id="output">Ouvindo em Standby...</div>
     </div>
@@ -170,7 +170,7 @@
           get outputNode() { return this._outputNode; }
           set inputNode(node) { this._inputNode = node; if (node) this.inputAnalyser = new Analyser(this._inputNode); }
           get inputNode() { return this._inputNode; }
-          static get styles() { return css`canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; z-index: -1; }`; }
+          static get styles() { return css`canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; pointer-events: none; z-index: 0; }`; }
 
           init() {
             const scene = new THREE.Scene(); scene.background = new THREE.Color(0x100c14);
@@ -216,55 +216,58 @@
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
         // ==========================================
-        // LÓGICA DE INTELIGÊNCIA ARTIFICIAL E VOZ
+        // LÓGICA DO ASSISTENTE (SOMENTE PLANILHA)
         // ==========================================
         
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
-        
-        // Proteção DRevo contra vazamento
-        let GEMINI_API_KEY = localStorage.getItem('drevo_gemini_key');
-        let ELEVENLABS_API_KEY = localStorage.getItem('drevo_elevenlabs_key');
-        
-        // ID da voz do Jarvis (Sotaque Britânico Masculino Elegante)
-        const VOICE_ID = "JBFqnCBcs6IxYk6v8gWE"; 
 
-        // Estados: OFF, STANDBY, LISTENING_COMMAND, CONFIRMING, THINKING, SAVING
+        // Estados: OFF, STANDBY, LISTENING_COMMAND, CONFIRMING, SAVING
         let currentState = "OFF";
-        let pendingData = { item: "", quantity: 1 };
+        let pendingData = { item: "", quantity: 1, category: "Estoque" };
         let isOrbSimulating = false;
         let isJarvisSpeaking = false;
         let globalRecognition = null;
 
-        // Função para perguntar ao Cérebro (Gemini)
-        async function askGemini(promptText) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-            const payload = {
-                contents: [{ parts: [{ 
-                    text: "Você é o Jarvis, a inteligência artificial criada por Tony Stark, mas você foi adaptado para a empresa DRevo. Responda de forma extremamente curta, sarcástica, altamente tecnológica e muito prestativa. Chame o usuário de 'Senhor'. A pergunta do usuário é: " + promptText 
-                }] }]
-            };
-            try {
-                const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-                const data = await response.json();
-                if (data.error) return "Acesso negado pela nuvem: " + data.error.message;
-                return data.candidates[0].content.parts[0].text.replace(/\*/g, ''); 
-            } catch (e) {
-                return "Desculpe senhor, meus sistemas cognitivos em nuvem estão inacessíveis no momento.";
-            }
-        }
-
-        // Função para Extrair Números
+        // Função para Extrair Categoria, Quantidade e Item
         function extractData(spokenText) {
             const wordToNumber = { "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, "nove":9, "dez":10 };
             
-            let cleanText = spokenText.replace(/jarvis/g, "").replace(/anote/g, "").replace(/planilha/g, "").replace(/adicionar/g, "").replace(/estoque/g, "").trim();
+            let textLower = spokenText.toLowerCase();
+            let category = "Estoque"; // Categoria Padrão
+
+            // Identificar a categoria pela fala
+            if (textLower.includes("no estoque") || textLower.includes("estoque")) category = "Estoque";
+            else if (textLower.includes("na produção") || textLower.includes("produção")) category = "Produção";
+            else if (textLower.includes("na oficina") || textLower.includes("oficina")) category = "Oficina";
+            else if (textLower.includes("vendas") || textLower.includes("venda")) category = "Vendas";
+            else if (textLower.includes("categoria ")) {
+                let parts = textLower.split("categoria ");
+                if(parts[1]) category = parts[1].split(" ")[0]; 
+            }
+
+            // Limpar o texto para achar a quantidade e o item
+            let cleanText = textLower
+                .replace(/jarvis/g, "")
+                .replace(/anote/g, "")
+                .replace(/adicionar/g, "")
+                .replace(/coloque/g, "")
+                .replace(/planilha/g, "")
+                .replace(/na categoria [a-zçãõ]+/g, "")
+                .replace(/categoria [a-zçãõ]+/g, "")
+                .replace(/no estoque/g, "")
+                .replace(/estoque/g, "")
+                .replace(/na produção/g, "")
+                .replace(/produção/g, "")
+                .replace(/na oficina/g, "")
+                .replace(/oficina/g, "")
+                .trim();
             
-            let words = cleanText.split(' ');
+            let words = cleanText.split(' ').filter(w => w !== "");
             let quantity = 1;
             let itemText = cleanText;
 
             if (words.length > 0) {
-                let firstWord = words[0].toLowerCase();
+                let firstWord = words[0];
                 if (!isNaN(parseInt(firstWord))) {
                     quantity = parseInt(firstWord);
                     words.shift();
@@ -275,7 +278,11 @@
                     itemText = words.join(' ');
                 }
             }
-            return { quantity: quantity, item: itemText.trim() };
+            
+            // Capitalizar categoria
+            category = category.charAt(0).toUpperCase() + category.slice(1);
+            
+            return { quantity: quantity, item: itemText.trim(), category: category };
         }
 
         function updateUI(statusText, outputText, color) {
@@ -286,88 +293,38 @@
             if(outputText !== null) outputEl.innerText = outputText;
         }
 
-        // NOVA FUNÇÃO DE VOZ: ELEVENLABS (VOZ DE CINEMA)
-        async function speakJarvis(text, onEndCallback) {
+        function speakJarvis(text, onEndCallback) {
             isJarvisSpeaking = true;
             if (globalRecognition) { try { globalRecognition.stop(); } catch(e){} }
 
-            // Se a chave não existir, usa a voz robótica nativa como fallback
-            if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY === "null") {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'pt-BR';
-                utterance.pitch = 0.2; utterance.rate = 1.15;
-                utterance.onend = () => { finalizeSpeech(onEndCallback); };
-                window.speechSynthesis.speak(utterance);
-                return;
-            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'pt-BR';
+            // Voz Natural, Clara e Profissional (sem distorção de robô)
+            utterance.pitch = 1.0; 
+            utterance.rate = 1.05; 
 
-            try {
-                // Chama a API da ElevenLabs
-                const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'xi-api-key': ELEVENLABS_API_KEY,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: text,
-                        model_id: "eleven_multilingual_v2", // Suporta português perfeito
-                        voice_settings: {
-                            stability: 0.5,
-                            similarity_boost: 0.8
-                        }
-                    })
-                });
+            // Tenta pegar a melhor voz em Português do Google ou padrão do sistema
+            const voices = window.speechSynthesis.getVoices();
+            const bestVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Daniel') || v.name.includes('Online'))) 
+                           || voices.find(v => v.lang.includes('pt-BR'));
+            
+            if (bestVoice) utterance.voice = bestVoice;
 
-                if (!response.ok) {
-                    throw new Error("Erro na ElevenLabs");
+            utterance.onend = () => {
+                isJarvisSpeaking = false;
+                if(onEndCallback) onEndCallback();
+                if (globalRecognition && currentState !== "OFF") {
+                    try { globalRecognition.start(); } catch(e){}
                 }
-
-                const blob = await response.blob();
-                const audioUrl = URL.createObjectURL(blob);
-                const audio = new Audio(audioUrl);
-                
-                audio.onended = () => {
-                    finalizeSpeech(onEndCallback);
-                    URL.revokeObjectURL(audioUrl); // Libera memória
-                };
-                
-                audio.play();
-            } catch (error) {
-                console.error("Falha ao gerar voz da ElevenLabs:", error);
-                // Fallback para voz nativa caso a ElevenLabs falhe
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'pt-BR';
-                utterance.pitch = 0.2; utterance.rate = 1.15;
-                utterance.onend = () => { finalizeSpeech(onEndCallback); };
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function finalizeSpeech(onEndCallback) {
-            isJarvisSpeaking = false;
-            if(onEndCallback) onEndCallback();
-            if (globalRecognition && currentState !== "OFF") {
-                try { globalRecognition.start(); } catch(e){}
-            }
+            };
+            window.speechSynthesis.speak(utterance);
         }
 
         window.iniciarJarvis = function() {
-            // Pede as chaves na primeira vez que clicar na tela
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === "null") {
-                GEMINI_API_KEY = prompt("🔐 SISTEMA DREVO: Cole sua nova chave do GEMINI (Cérebro):");
-                if (GEMINI_API_KEY) localStorage.setItem('drevo_gemini_key', GEMINI_API_KEY.trim());
-            }
-            if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY === "null") {
-                ELEVENLABS_API_KEY = prompt("🎙️ SISTEMA DREVO: Cole sua chave da ELEVENLABS (Voz de Cinema):");
-                if (ELEVENLABS_API_KEY) localStorage.setItem('drevo_elevenlabs_key', ELEVENLABS_API_KEY.trim());
-            }
-
             if(currentState !== "OFF") return;
             
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) { alert("Reconhecimento não suportado."); return; }
+            if (!SpeechRecognition) { alert("Reconhecimento não suportado no seu navegador."); return; }
             
             globalRecognition = new SpeechRecognition();
             globalRecognition.lang = 'pt-BR';
@@ -375,8 +332,8 @@
             globalRecognition.interimResults = false; 
 
             currentState = "STANDBY";
-            updateUI("MODO STANDBY ATIVO", "Diga 'Jarvis' para acordar", "#00ff66");
-            speakJarvis("Sistemas ativados, senhor.");
+            updateUI("SISTEMA DREVO ATIVO", "Diga o comando", "#00ff66");
+            speakJarvis("Sistemas ativados, aguardando comando.");
 
             globalRecognition.onstart = () => {
                 const visualizer = document.getElementById('orb-visualizer');
@@ -396,11 +353,11 @@
                 }
                 
                 if(currentState === "STANDBY") {
-                    updateUI("STANDBY", "Diga 'Jarvis'...", "#00ff66");
+                    updateUI("STANDBY", "Ouvindo...", "#00ff66");
                 } else if(currentState === "LISTENING_COMMAND") {
-                    updateUI("OUVINDO COMANDO", "Pode falar, senhor...", "#00f2ff");
+                    updateUI("OUVINDO COMANDO", "Qual item e categoria?", "#00f2ff");
                 } else if(currentState === "CONFIRMING") {
-                    updateUI("AGUARDANDO CONFIRMAÇÃO", "Diga: 'Sim' ou 'Não'", "#ffaa00");
+                    updateUI("CONFIRMAÇÃO", "Diga 'Sim' ou 'Não'", "#ffaa00");
                 }
             };
 
@@ -408,63 +365,50 @@
                 isOrbSimulating = false;
             };
 
-            globalRecognition.onresult = async (event) => {
+            globalRecognition.onresult = (event) => {
                 const text = event.results[0][0].transcript.trim().toLowerCase();
                 document.getElementById('output').innerText = text;
 
-                // Lógica Inteligente de Roteamento (Planilha vs Bate-Papo)
-                const isQuestion = /^(como|qual|quem|onde|por que|o que|explique|me diga|jarvis como|jarvis qual|jarvis o que)/.test(text);
-
+                // Fluxo Principal de Lançamento na Planilha
                 if (currentState === "STANDBY") {
                     if (text.includes("jarvis")) {
                         if (text.length < 10) {
+                            // Só falou o nome, espera o item
                             currentState = "LISTENING_COMMAND";
-                            speakJarvis("Às ordens.");
-                        }
-                        else if (isQuestion) {
-                            currentState = "THINKING";
-                            updateUI("PENSANDO...", "Consultando banco de dados...", "#ff00ff");
-                            const resposta = await askGemini(text);
-                            speakJarvis(resposta, () => { currentState = "STANDBY"; });
-                        }
-                        else {
-                            currentState = "LISTENING_COMMAND"; 
+                            speakJarvis("O que deseja anotar?");
+                        } else {
+                            // Já falou o nome e o item (Ex: "Jarvis 5 parafusos na produção")
                             processPlanilhaCommand(text);
                         }
                     }
                 } 
                 else if (currentState === "LISTENING_COMMAND") {
-                    if (isQuestion) {
-                        currentState = "THINKING";
-                        updateUI("PENSANDO...", "Processando via Gemini...", "#ff00ff");
-                        const resposta = await askGemini(text);
-                        speakJarvis(resposta, () => { currentState = "STANDBY"; });
-                    } else {
-                        processPlanilhaCommand(text);
-                    }
+                    // Está ouvindo o item
+                    processPlanilhaCommand(text);
                 } 
                 else if (currentState === "CONFIRMING") {
-                    if (text.includes("sim") || text.includes("confirma") || text.includes("correto") || text.includes("ok")) {
+                    if (text.includes("sim") || text.includes("confirma") || text.includes("correto") || text.includes("ok") || text.includes("pode")) {
                         currentState = "SAVING";
-                        updateUI("SALVANDO NA PLANILHA...", "Enviando para os servidores...", "#00f2ff");
-                        speakJarvis("Salvando registro, senhor.");
+                        updateUI("SALVANDO...", "Enviando para o Google Sheets...", "#00f2ff");
+                        speakJarvis("Lançando na planilha.");
                         
                         fetch(SCRIPT_URL, {
                             method: 'POST', mode: 'no-cors',
-                            body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, categoria: "Estoque" })
+                            body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, categoria: pendingData.category })
                         }).then(() => {
-                            updateUI("✅ ADICIONADO", `${pendingData.quantity}x ${pendingData.item}`, "#00ff66");
-                            speakJarvis("Pronto. Retornando ao modo de vigília.", () => { currentState = "STANDBY"; });
+                            updateUI("✅ ADICIONADO", `${pendingData.quantity}x ${pendingData.item} (${pendingData.category})`, "#00ff66");
+                            speakJarvis("Pronto. Retornando ao modo de escuta.", () => { currentState = "STANDBY"; });
                         }).catch((e) => {
                             updateUI("ERRO AO SALVAR", e.message, "#ff0000");
+                            speakJarvis("Erro na rede. Tente de novo.");
                             currentState = "STANDBY";
                         });
 
                     } else if (text.includes("não") || text.includes("cancela")) {
-                        updateUI("CANCELADO", "Voltando a dormir.", "#ffaa00");
-                        speakJarvis("Cancelado. Voltando a ouvir o ambiente.", () => { currentState = "STANDBY"; });
+                        updateUI("CANCELADO", "Operação abortada.", "#ffaa00");
+                        speakJarvis("Abortado.", () => { currentState = "STANDBY"; });
                     } else {
-                        speakJarvis("Não entendi a confirmação. Diga sim ou não.");
+                        speakJarvis("Confirme com sim ou não.");
                     }
                 }
             };
@@ -482,14 +426,14 @@
         function processPlanilhaCommand(text) {
             const data = extractData(text);
             if(data.item === "") {
-                speakJarvis("O que o senhor deseja anotar?");
+                speakJarvis("Não entendi o item. Repita por favor.");
                 currentState = "LISTENING_COMMAND";
                 return;
             }
             pendingData = data;
             currentState = "CONFIRMING";
-            updateUI("PROCESSANDO...", `Item: ${data.item} | Qtd: ${data.quantity}`, "#00f2ff");
-            speakJarvis(`O senhor disse ${data.quantity} ${data.item}. Posso confirmar no estoque?`);
+            updateUI("PROCESSANDO...", `Categoria: ${data.category} | Qtd: ${data.quantity} | Item: ${data.item}`, "#00f2ff");
+            speakJarvis(`Anotar ${data.quantity} ${data.item} na categoria ${data.category}?`);
         }
     </script>
 </body>
