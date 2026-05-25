@@ -312,8 +312,9 @@
         }
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
-        // 4. NOVA LÓGICA DE VOZ (JARVIS INTELIGENTE)
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
+
+        // 4. NOVA LÓGICA DE VOZ COM CATEGORIAS DINÂMICAS E O SCRIPT URL NOVO
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyF9i_DZ9_wSrRRkg2p3Pn_hfnQTK6Z0TT7aw45TRTTBDDg-NdAfkvc_IXLl_kBqlADSw/exec";
         
         let audioCtx;
         let currentState = "OFF";
@@ -327,15 +328,20 @@
             let textLower = spokenText.toLowerCase();
             let category = ""; 
 
-            if (textLower.includes("no estoque") || textLower.includes("estoque")) category = "Estoque";
-            else if (textLower.includes("na produção") || textLower.includes("produção")) category = "Produção";
-            else if (textLower.includes("na oficina") || textLower.includes("oficina")) category = "Oficina";
-            else if (textLower.includes("vendas") || textLower.includes("venda")) category = "Vendas";
+            // Procura se você falou "na categoria [nome]"
+            const categoryMatch = textLower.match(/(?:na |em )?categoria ([\w\u00C0-\u017F]+)/);
+            if (categoryMatch) {
+                category = categoryMatch[1];
+            } else if (textLower.includes("no estoque") || textLower.includes("estoque")) { category = "Estoque"; }
+            else if (textLower.includes("na produção") || textLower.includes("produção")) { category = "Produção"; }
+            else if (textLower.includes("na oficina") || textLower.includes("oficina")) { category = "Oficina"; }
+            else if (textLower.includes("vendas") || textLower.includes("venda")) { category = "Vendas"; }
 
             let cleanText = textLower
                 .replace(/jarvis/g, "").replace(/anote/g, "").replace(/adicionar/g, "").replace(/coloque/g, "").replace(/planilha/g, "")
                 .replace(/no estoque/g, "").replace(/estoque/g, "").replace(/na produção/g, "").replace(/produção/g, "")
-                .replace(/na oficina/g, "").replace(/oficina/g, "").trim();
+                .replace(/na oficina/g, "").replace(/oficina/g, "")
+                .replace(/(?:na |em )?categoria [\w\u00C0-\u017F]+/g, "").trim();
             
             let words = cleanText.split(' ').filter(w => w !== "");
             let quantity = 1;
@@ -450,7 +456,6 @@
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Simulação da Esfera Orb reagindo à fala do Jarvis ou ao microfone
                 if (!window.simuladorOrb) {
                     window.simuladorOrb = setInterval(() => {
                         if (currentState !== "OFF" && visualizer.sphere) {
@@ -519,10 +524,12 @@
                             let unitUI = pendingData.unit ? " " + pendingData.unit : "";
                             updateUI("✅ SALVANDO...", `${pendingData.quantity}x${unitUI} ${pendingData.item}`, "#00ff66");
                             
-                            // Dispara para a planilha
+                            // Envia os 4 dados separadinhos: categoria, item, quantidade, unidade
                             fetch(SCRIPT_URL, {
                                 method: 'POST', mode: 'no-cors',
                                 body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, unidade: pendingData.unit, categoria: pendingData.category })
+                            }).then(() => {
+                                updateUI("✅ ANOTADO", `${pendingData.quantity}x${unitUI} ${pendingData.item} (${pendingData.category})`, "#ffaa00");
                             }).catch(e => console.log("Erro na planilha:", e));
 
                             speakJarvis("Pronto.", () => { 
