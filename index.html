@@ -313,7 +313,6 @@
         customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
 
 
-        // 4. NOVA LÓGICA DE VOZ COM CATEGORIAS DINÂMICAS E O SCRIPT URL NOVO
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyF9i_DZ9_wSrRRkg2p3Pn_hfnQTK6Z0TT7aw45TRTTBDDg-NdAfkvc_IXLl_kBqlADSw/exec";
         
         let audioCtx;
@@ -328,7 +327,6 @@
             let textLower = spokenText.toLowerCase();
             let category = ""; 
 
-            // Procura se você falou "na categoria [nome]"
             const categoryMatch = textLower.match(/(?:na |em )?categoria ([\w\u00C0-\u017F]+)/);
             if (categoryMatch) {
                 category = categoryMatch[1];
@@ -524,10 +522,12 @@
                             let unitUI = pendingData.unit ? " " + pendingData.unit : "";
                             updateUI("✅ SALVANDO...", `${pendingData.quantity}x${unitUI} ${pendingData.item}`, "#00ff66");
                             
-                            // Envia os 4 dados separadinhos: categoria, item, quantidade, unidade
+                            // JUNTA a quantidade com a unidade (ex: "2 caixas") antes de mandar!
+                            let mergedQuantidade = pendingData.quantity + (pendingData.unit ? " " + pendingData.unit : "");
+
                             fetch(SCRIPT_URL, {
                                 method: 'POST', mode: 'no-cors',
-                                body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, unidade: pendingData.unit, categoria: pendingData.category })
+                                body: JSON.stringify({ item: pendingData.item, quantidade: mergedQuantidade, categoria: pendingData.category })
                             }).then(() => {
                                 updateUI("✅ ANOTADO", `${pendingData.quantity}x${unitUI} ${pendingData.item} (${pendingData.category})`, "#ffaa00");
                             }).catch(e => console.log("Erro na planilha:", e));
