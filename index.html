@@ -2,144 +2,325 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>DRevo Jarvis - IA</title>
+    <title>DREVO JARVIS - ORB EDITION</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+      {
+        "imports": {
+          "lit": "https://esm.sh/lit@^3.3.0",
+          "lit/": "https://esm.sh/lit@^3.3.0/",
+          "@lit/context": "https://esm.sh/@lit/context@^1.1.5",
+          "three": "https://esm.sh/three@^0.176.0",
+          "three/": "https://esm.sh/three@^0.176.0/"
+        }
+      }
+    </script>
+
     <style>
         body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #030305; color: #00f2ff; 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: #050508; 
+            color: #00f2ff; 
             font-family: 'Segoe UI', system-ui, sans-serif; 
-            overflow: hidden; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-        }
-
-        .drevo-watermark {
-            position: absolute; bottom: 20px; right: 25px;
-            font-size: 14px; font-weight: 800; letter-spacing: 5px;
-            color: rgba(255, 170, 0, 0.4); text-transform: uppercase;
-            z-index: 5; pointer-events: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         #ui-layer {
-            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-            background: rgba(5, 10, 20, 0.45); backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 242, 255, 0.25); border-top: 1px solid rgba(0, 242, 255, 0.5);
-            border-radius: 24px; padding: 35px 40px; text-align: center; z-index: 10;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.6), inset 0 0 20px rgba(0, 242, 255, 0.05);
-            width: 85%; max-width: 500px;
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 20, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            z-index: 10;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0, 242, 255, 0.1);
+            width: 80%;
+            max-width: 500px;
+            transition: all 0.3s ease;
         }
 
-        .drevo-logo {
-            font-size: 11px; letter-spacing: 4px; color: #ffaa00;
-            text-transform: uppercase; margin-bottom: -5px; font-weight: 800; opacity: 0.9;
-        }
-
-        h1 { 
-            margin: 5px 0 15px 0; font-size: 26px; letter-spacing: 3px; 
-            font-weight: 300; color: #fff; text-shadow: 0 0 15px rgba(0, 242, 255, 0.8); 
-        }
-        h1 strong { font-weight: 700; color: #00f2ff; }
-
-        #status { 
-            letter-spacing: 2px; font-weight: 700; font-size: 13px; 
-            color: #ffaa00; margin-bottom: 15px; text-transform: uppercase;
-        }
-
-        #output { 
-            font-size: 18px; color: #e0faff; font-weight: 400; 
-            min-height: 25px; background: rgba(0, 0, 0, 0.3); padding: 15px;
-            border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
-        }
+        h1 { margin: 0 0 10px 0; font-size: 24px; letter-spacing: 2px; font-weight: 600; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+        #status { letter-spacing: 2px; font-weight: bold; font-size: 14px; color: #ffaa00; margin-bottom: 15px; transition: color 0.3s; }
+        #output { font-size: 18px; color: #ffffff; font-weight: 300; min-height: 25px; }
         
-        #orb-visualizer { 
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 300px; z-index: 1; pointer-events: none;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .css-orb {
-            width: 140px; height: 140px; border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #00ffff 0%, #0077ff 30%, #000033 80%);
-            box-shadow: 0 0 50px rgba(0, 242, 255, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9);
-            position: relative; transform-style: preserve-3d;
-            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
-            animation: float 4s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px) scale(1); }
-            50% { transform: translateY(-15px) scale(1.02); }
-            100% { transform: translateY(0px) scale(1); }
-        }
-
-        .css-orb::before {
-            content: ''; position: absolute; top: -15%; left: -15%; right: -15%; bottom: -15%;
-            border-radius: 50%; border: 3px solid transparent;
-            border-top-color: rgba(0, 242, 255, 0.9); border-bottom-color: rgba(0, 242, 255, 0.4);
-            animation: rotateOrb 3s linear infinite; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
-        }
-
-        .css-orb::after {
-            content: ''; position: absolute; top: -30%; left: -30%; right: -30%; bottom: -30%;
-            border-radius: 50%; border: 1px solid transparent;
-            border-left-color: rgba(0, 150, 255, 0.6); border-right-color: rgba(0, 150, 255, 0.2);
-            animation: rotateOrbReverse 6s linear infinite;
-        }
-
-        @keyframes rotateOrb {
-            0% { transform: rotateZ(0deg) rotateX(65deg) rotateY(0deg); }
-            100% { transform: rotateZ(360deg) rotateX(65deg) rotateY(0deg); }
-        }
-        @keyframes rotateOrbReverse {
-            0% { transform: rotateZ(360deg) rotateX(45deg) rotateY(45deg); }
-            100% { transform: rotateZ(0deg) rotateX(45deg) rotateY(45deg); }
-        }
-
+        gdm-live-audio-visuals-3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
         #trigger-zone { position: absolute; inset: 0; z-index: 20; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="drevo-watermark">DREVO SYSTEMS</div>
-    
-    <div id="orb-visualizer">
-        <div class="css-orb" id="holographic-orb"></div>
-    </div>
-    
+    <gdm-live-audio-visuals-3d id="orb-visualizer"></gdm-live-audio-visuals-3d>
     <div id="trigger-zone" onclick="iniciarJarvis()"></div>
-    
     <div id="ui-layer">
-        <div class="drevo-logo">Sistemas DRevo</div>
-        <h1>ESTOQUE <strong>A.I.</strong></h1>
-        <p id="status">CLIQUE NA TELA PARA ACORDAR</p>
-        <div id="output">Ouvindo em Standby...</div>
+        <h1>DREVO JARVIS</h1>
+        <p id="status">CLIQUE EM QUALQUER LUGAR PARA INICIAR</p>
+        <div id="output">Aguardando...</div>
     </div>
 
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
+    <script type="module">
+        import { LitElement, css, html } from 'lit';
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
+        class Analyser {
+            constructor(node) {
+                this.analyser = node.context.createAnalyser();
+                this.analyser.fftSize = 32;
+                this.bufferLength = this.analyser.frequencyBinCount;
+                this.dataArray = new Uint8Array(this.bufferLength);
+                node.connect(this.analyser);
+            }
+            update() { this.analyser.getByteFrequencyData(this.dataArray); }
+            get data() { return this.dataArray; }
+        }
+
+        const backdropVS = `precision highp float;
+        in vec3 position;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
+
+        const backdropFS = `precision highp float;
+        out vec4 fragmentColor;
+        uniform vec2 resolution;
+        uniform float rand;
+        void main() {
+          float aspectRatio = resolution.x / resolution.y; 
+          vec2 vUv = gl_FragCoord.xy / resolution;
+          float noise = (fract(sin(dot(vUv, vec2(12.9898 + rand,78.233)*2.0)) * 43758.5453));
+          vUv -= .5; vUv.x *= aspectRatio;
+          float factor = 4.; float d = factor * length(vUv);
+          vec3 from = vec3(3.) / 255.; vec3 to = vec3(16., 12., 20.) / 2550.;
+          fragmentColor = vec4(mix(from, to, d) + .005 * noise, 1.);
+        }`;
+
+        const sphereVS = `#define STANDARD
+        varying vec3 vViewPosition;
+        #ifdef USE_TRANSMISSION
+          varying vec3 vWorldPosition;
+        #endif
+        #include <common>
+        #include <batching_pars_vertex>
+        #include <uv_pars_vertex>
+        #include <displacementmap_pars_vertex>
+        #include <color_pars_vertex>
+        #include <fog_pars_vertex>
+        #include <normal_pars_vertex>
+        #include <morphtarget_pars_vertex>
+        #include <skinning_pars_vertex>
+        #include <shadowmap_pars_vertex>
+        #include <logdepthbuf_pars_vertex>
+        #include <clipping_planes_pars_vertex>
+
+        uniform float time;
+        uniform vec4 inputData;
+        uniform vec4 outputData;
+
+        vec3 calc( vec3 pos ) {
+          vec3 dir = normalize( pos );
+          vec3 p = dir + vec3( time, 0., 0. );
+          return pos +
+            1. * inputData.x * inputData.y * dir * (.5 + .5 * sin(inputData.z * pos.x + time)) +
+            1. * outputData.x * outputData.y * dir * (.5 + .5 * sin(outputData.z * pos.y + time));
+        }
+
+        vec3 spherical( float r, float theta, float phi ) {
+          return r * vec3(cos(theta)*cos(phi), sin(theta)*cos(phi), sin(phi));
+        }
+
+        void main() {
+          #include <uv_vertex>
+          #include <color_vertex>
+          #include <morphinstance_vertex>
+          #include <morphcolor_vertex>
+          #include <batching_vertex>
+          #include <beginnormal_vertex>
+          #include <morphnormal_vertex>
+          #include <skinbase_vertex>
+          #include <skinnormal_vertex>
+          #include <defaultnormal_vertex>
+          #include <normal_vertex>
+          #include <begin_vertex>
+
+          float inc = 0.001;
+          float r = length( position );
+          float theta = ( uv.x + 0.5 ) * 2. * PI;
+          float phi = -( uv.y + 0.5 ) * PI;
+
+          vec3 np = calc( spherical( r, theta, phi ) );
+
+          vec3 tangent = normalize( calc( spherical( r, theta + inc, phi ) ) - np );
+          vec3 bitangent = normalize( calc( spherical( r, theta, phi + inc ) ) - np );
+          transformedNormal = -normalMatrix * normalize( cross( tangent, bitangent ) );
+
+          vNormal = normalize( transformedNormal );
+          transformed = np;
+
+          #include <morphtarget_vertex>
+          #include <skinning_vertex>
+          #include <displacementmap_vertex>
+          #include <project_vertex>
+          #include <logdepthbuf_vertex>
+          #include <clipping_planes_vertex>
+          vViewPosition = - mvPosition.xyz;
+          #include <worldpos_vertex>
+          #include <shadowmap_vertex>
+          #include <fog_vertex>
+          #ifdef USE_TRANSMISSION
+            vWorldPosition = worldPosition.xyz;
+          #endif
+        }`;
+
+        class GdmLiveAudioVisuals3D extends LitElement {
+          static get properties() { return { outputNode: { type: Object }, inputNode: { type: Object } }; }
+          constructor() { super(); this.prevTime = 0; this.rotationVec = new THREE.Vector3(0, 0, 0); }
+
+          set outputNode(node) { this._outputNode = node; if (node) this.outputAnalyser = new Analyser(this._outputNode); }
+          get outputNode() { return this._outputNode; }
+          set inputNode(node) { this._inputNode = node; if (node) this.inputAnalyser = new Analyser(this._inputNode); }
+          get inputNode() { return this._inputNode; }
+
+          static get styles() {
+            return css`
+              canvas { width: 100% !important; height: 100% !important; position: absolute; inset: 0; image-rendering: pixelated; z-index: -1; }
+            `;
+          }
+
+          init() {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x100c14);
+
+            const backdrop = new THREE.Mesh(
+              new THREE.IcosahedronGeometry(10, 5),
+              new THREE.RawShaderMaterial({
+                uniforms: { resolution: { value: new THREE.Vector2(1, 1) }, rand: { value: 0 } },
+                vertexShader: backdropVS, fragmentShader: backdropFS, glslVersion: THREE.GLSL3,
+              })
+            );
+            backdrop.material.side = THREE.BackSide;
+            scene.add(backdrop);
+            this.backdrop = backdrop;
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(2, -2, 5);
+            this.camera = camera;
+
+            const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio / 1);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            const sphereMaterial = new THREE.MeshStandardMaterial({
+              color: 0x000010, metalness: 0.8, roughness: 0.2, emissive: 0x00aaff, emissiveIntensity: 0.2,
+            });
+
+            sphereMaterial.onBeforeCompile = (shader) => {
+              shader.uniforms.time = { value: 0 };
+              shader.uniforms.inputData = { value: new THREE.Vector4() };
+              shader.uniforms.outputData = { value: new THREE.Vector4() };
+              sphereMaterial.userData.shader = shader;
+              shader.vertexShader = sphereVS;
+            };
+
+            const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 10), sphereMaterial);
+            scene.add(sphere);
+            this.sphere = sphere;
+
+            const renderPass = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.5, 0.5, 0);
+
+            const composer = new EffectComposer(renderer);
+            composer.addPass(renderPass);
+            composer.addPass(bloomPass);
+            this.composer = composer;
+
+            const onWindowResize = () => {
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+              const dPR = renderer.getPixelRatio();
+              const w = window.innerWidth;
+              const h = window.innerHeight;
+              backdrop.material.uniforms.resolution.value.set(w * dPR, h * dPR);
+              renderer.setSize(w, h);
+              composer.setSize(w, h);
+            };
+            window.addEventListener('resize', onWindowResize);
+            onWindowResize();
+            this.animation();
+          }
+
+          animation() {
+            requestAnimationFrame(() => this.animation());
+            if (this.inputAnalyser) this.inputAnalyser.update();
+            if (this.outputAnalyser) this.outputAnalyser.update();
+
+            const t = performance.now();
+            const dt = (t - this.prevTime) / (1000 / 60);
+            this.prevTime = t;
+
+            const backdropMaterial = this.backdrop.material;
+            const sphereMaterial = this.sphere.material;
+
+            backdropMaterial.uniforms.rand.value = Math.random() * 10000;
+
+            if (sphereMaterial.userData.shader) {
+              const outData = this.outputAnalyser ? this.outputAnalyser.data : new Uint8Array(32);
+              const inData = this.inputAnalyser ? this.inputAnalyser.data : new Uint8Array(32);
+
+              this.sphere.scale.setScalar(1 + (0.2 * outData[1]) / 255 + (0.2 * inData[1]) / 255);
+
+              const f = 0.001;
+              this.rotationVec.x += (dt * f * 0.5 * outData[1]) / 255 + (dt * f * 0.5 * inData[1]) / 255;
+              this.rotationVec.z += (dt * f * 0.5 * inData[1]) / 255;
+              this.rotationVec.y += (dt * f * 0.25 * inData[2]) / 255 + (dt * f * 0.25 * outData[2]) / 255;
+
+              const euler = new THREE.Euler(this.rotationVec.x, this.rotationVec.y, this.rotationVec.z);
+              const quaternion = new THREE.Quaternion().setFromEuler(euler);
+              const vector = new THREE.Vector3(0, 0, 5);
+              vector.applyQuaternion(quaternion);
+              this.camera.position.copy(vector);
+              this.camera.lookAt(this.sphere.position);
+
+              sphereMaterial.userData.shader.uniforms.time.value += (dt * 0.1 * outData[0]) / 255 + (dt * 0.1 * inData[0]) / 255;
+              sphereMaterial.userData.shader.uniforms.inputData.value.set((1 * inData[0]) / 255, (0.1 * inData[1]) / 255, (10 * inData[2]) / 255, 0);
+              sphereMaterial.userData.shader.uniforms.outputData.value.set((2 * outData[0]) / 255, (0.1 * outData[1]) / 255, (10 * outData[2]) / 255, 0);
+            }
+            this.composer.render();
+          }
+
+          firstUpdated() { this.canvas = this.shadowRoot.querySelector('canvas'); this.init(); }
+          render() { return html`<canvas></canvas>`; }
+        }
+        customElements.define('gdm-live-audio-visuals-3d', GdmLiveAudioVisuals3D);
+
+        // 4. NOVA LÓGICA DE VOZ (JARVIS INTELIGENTE)
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8EWJKJd4-7fqYwuCI6xq5tHjGwazGVSszwng8JBqsLeQ_Nu_RZuvseyjASl6KkBAB9Q/exec";
+        
+        let audioCtx;
         let currentState = "OFF";
-        let pendingData = { item: "", quantity: 1, category: "" };
+        let pendingData = { item: "", quantity: 1, unit: "", category: "" };
         let ignoreRecognition = false;
         let globalRecognition = null;
         let isSpeaking = false;
-
-        const orb = document.getElementById('holographic-orb');
-
-        function animateCssOrb() {
-            if (!orb) return;
-            if (isSpeaking) {
-                let scale = 1 + Math.random() * 0.2;
-                orb.style.transform = `scale(${scale})`;
-                orb.style.boxShadow = `0 0 ${80 + Math.random()*50}px rgba(0, 242, 255, 1), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9)`;
-            } else {
-                orb.style.transform = `scale(1)`;
-                orb.style.boxShadow = `0 0 50px rgba(0, 242, 255, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.6), inset -20px -20px 40px rgba(0, 0, 0, 0.9)`;
-            }
-            requestAnimationFrame(animateCssOrb);
-        }
-        animateCssOrb();
 
         function extractData(spokenText) {
             const wordToNumber = { "um":1, "uma":1, "dois":2, "duas":2, "três":3, "tres":3, "quatro":4, "cinco":5, "seis":6, "sete":7, "oito":8, "nove":9, "dez":10 };
@@ -158,152 +339,87 @@
             
             let words = cleanText.split(' ').filter(w => w !== "");
             let quantity = 1;
-            let itemText = cleanText;
 
             if (words.length > 0) {
                 let firstWord = words[0];
                 if (!isNaN(parseInt(firstWord))) {
                     quantity = parseInt(firstWord);
-                    words.shift(); itemText = words.join(' ');
+                    words.shift(); 
                 } else if (wordToNumber[firstWord]) {
                     quantity = wordToNumber[firstWord];
-                    words.shift(); itemText = words.join(' ');
+                    words.shift(); 
                 }
             }
             
+            const possibleUnits = ["metro", "metros", "par", "pares", "kit", "kits", "conjunto", "conjuntos", "peça", "peças", "caixa", "caixas", "rolo", "rolos"];
+            let unit = "";
+            
+            if (words.length > 0 && possibleUnits.includes(words[0])) {
+                unit = words[0];
+                words.shift();
+                if (words.length > 0 && (words[0] === "de" || words[0] === "do" || words[0] === "da")) {
+                    words.shift();
+                }
+            }
+            
+            let itemText = words.join(' ');
+            
             if(category) category = category.charAt(0).toUpperCase() + category.slice(1);
-            return { quantity: quantity, item: itemText.trim(), category: category };
-        }
-
-        function updateUI(statusText, outputText, color) {
-            document.getElementById('status').innerText = statusText;
-            document.getElementById('status').style.color = color;
-            if(outputText !== null) document.getElementById('output').innerText = outputText;
+            return { quantity: quantity, unit: unit, item: itemText.trim(), category: category };
         }
 
         function speakJarvis(text, onEndCallback) {
             window.speechSynthesis.cancel();
-            
             ignoreRecognition = true;
             isSpeaking = true;
             
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
-            utterance.pitch = 0.2; 
-            utterance.rate = 1.15; 
+            utterance.pitch = 0.4; 
+            utterance.rate = 1.05; 
 
             const voices = window.speechSynthesis.getVoices();
-            const jarvisVoice = voices.find(v => v.name.includes('UK English Male') || v.name.includes('Antonio') || v.name.includes('Male') || v.name.includes('Masculino'));
+            const jarvisVoice = voices.find(v => 
+                v.name.includes('Antonio') || 
+                v.name.includes('Google português do Brasil') || 
+                v.name.includes('UK English Male')
+            );
+            
             if (jarvisVoice) utterance.voice = jarvisVoice;
 
             let durationSafeLimit = Math.max(2000, text.length * 150);
             let safetyReset = setTimeout(() => {
-                resetState();
+                ignoreRecognition = false;
+                isSpeaking = false;
                 if(onEndCallback) onEndCallback();
             }, durationSafeLimit);
 
-            function resetState() {
-                ignoreRecognition = false;
-                isSpeaking = false;
-            }
-
             utterance.onend = () => {
                 clearTimeout(safetyReset);
-                resetState();
+                ignoreRecognition = false;
+                isSpeaking = false;
                 if(onEndCallback) onEndCallback();
             };
 
             utterance.onerror = () => {
                 clearTimeout(safetyReset);
-                resetState();
+                ignoreRecognition = false;
+                isSpeaking = false;
                 if(onEndCallback) onEndCallback();
             };
 
             window.speechSynthesis.speak(utterance);
         }
 
-        window.iniciarJarvis = function() {
-            if(currentState !== "OFF") return;
-            
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) { alert("Reconhecimento não suportado no seu navegador."); return; }
-            
-            globalRecognition = new SpeechRecognition();
-            globalRecognition.lang = 'pt-BR';
-            globalRecognition.continuous = true; 
-            globalRecognition.interimResults = false; 
+        function updateUI(statusText, outputText, color) {
+            const statusEl = document.getElementById('status');
+            const outputEl = document.getElementById('output');
+            statusEl.innerText = statusText;
+            statusEl.style.color = color;
+            if(outputText !== null) outputEl.innerText = outputText;
+        }
 
-            currentState = "STANDBY";
-            updateUI("SISTEMA DE ESTOQUE ATIVO", "Diga 'Jarvis' e o item", "#00ff66");
-            speakJarvis("Sistemas ativados, senhor.");
-
-            globalRecognition.onstart = () => {
-                if(currentState === "STANDBY") updateUI("STANDBY", "Ouvindo...", "#00ff66");
-            };
-
-            globalRecognition.onresult = (event) => {
-                if(ignoreRecognition) return;
-
-                const text = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-                document.getElementById('output').innerText = text;
-
-                if (currentState === "STANDBY") {
-                    if (text.includes("jarvis")) {
-                        if (text.length < 10) {
-                            currentState = "LISTENING_COMMAND";
-                            speakJarvis("O que deseja anotar?");
-                        } else {
-                            processPlanilhaCommand(text);
-                        }
-                    }
-                } 
-                else if (currentState === "LISTENING_COMMAND") {
-                    processPlanilhaCommand(text);
-                } 
-                else if (currentState === "ASKING_CATEGORY") {
-                    let userCat = text.replace(/jarvis/g, "").trim();
-                    pendingData.category = userCat.charAt(0).toUpperCase() + userCat.slice(1);
-                    currentState = "CONFIRMING";
-                    updateUI("PROCESSANDO...", `Categoria: ${pendingData.category} | Qtd: ${pendingData.quantity} | Item: ${pendingData.item}`, "#00f2ff");
-                    speakJarvis(`Anotar ${pendingData.quantity} ${pendingData.item} na categoria ${pendingData.category}?`);
-                }
-                else if (currentState === "CONFIRMING") {
-                    if (text.includes("sim") || text.includes("confirma") || text.includes("ok") || text.includes("pode")) {
-                        currentState = "SAVING";
-                        updateUI("SALVANDO...", "Enviando para o Google Sheets...", "#00f2ff");
-                        speakJarvis("Lançando na planilha.");
-                        
-                        fetch(SCRIPT_URL, {
-                            method: 'POST', mode: 'no-cors',
-                            body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, categoria: pendingData.category })
-                        }).then(() => {
-                            updateUI("✅ ADICIONADO", `${pendingData.quantity}x ${pendingData.item} (${pendingData.category})`, "#00ff66");
-                            speakJarvis("Pronto.", () => { currentState = "STANDBY"; });
-                        }).catch((e) => {
-                            updateUI("ERRO AO SALVAR", e.message, "#ff0000");
-                            speakJarvis("Erro na rede. Tente de novo.");
-                            currentState = "STANDBY";
-                        });
-
-                    } else if (text.includes("não") || text.includes("cancela")) {
-                        updateUI("CANCELADO", "Operação abortada.", "#ffaa00");
-                        speakJarvis("Abortado.", () => { currentState = "STANDBY"; });
-                    } else {
-                        speakJarvis("Confirme com sim ou não.");
-                    }
-                }
-            };
-
-            globalRecognition.onend = () => {
-                if (currentState !== "OFF") {
-                    try { globalRecognition.start(); } catch(e) {}
-                }
-            };
-
-            try { globalRecognition.start(); } catch(e) {}
-        };
-
-        function processPlanilhaCommand(text) {
+        function processCommand(text) {
             const data = extractData(text);
             if(data.item === "") {
                 speakJarvis("Não entendi o item. Repita por favor.");
@@ -312,16 +428,131 @@
             }
             pendingData = data;
             
+            let unitText = data.unit ? data.unit + " de " : "";
+            let unitUI = data.unit ? " " + data.unit : "";
+            
             if (data.category === "") {
                 currentState = "ASKING_CATEGORY";
-                updateUI("FALTA CATEGORIA", `Item: ${data.item} | Qtd: ${data.quantity}`, "#ffaa00");
-                speakJarvis(`Em qual categoria, senhor?`);
+                updateUI("FALTA CATEGORIA", `Item: ${data.item} | Qtd: ${data.quantity}${unitUI}`, "#ffaa00");
+                speakJarvis(`Em qual categoria?`);
             } else {
                 currentState = "CONFIRMING";
-                updateUI("PROCESSANDO...", `Categoria: ${data.category} | Qtd: ${data.quantity} | Item: ${data.item}`, "#00f2ff");
-                speakJarvis(`Anotar ${data.quantity} ${data.item} na categoria ${data.category}?`);
+                updateUI("PROCESSANDO...", `Categoria: ${data.category} | Qtd: ${data.quantity}${unitUI} | Item: ${data.item}`, "#00f2ff");
+                speakJarvis(`Anotar ${data.quantity} ${unitText}${data.item} na categoria ${data.category}?`);
             }
         }
+
+        window.iniciarJarvis = async function() {
+            if(currentState !== "OFF") return;
+            
+            const visualizer = document.getElementById('orb-visualizer');
+
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Simulação da Esfera Orb reagindo à fala do Jarvis ou ao microfone
+                if (!window.simuladorOrb) {
+                    window.simuladorOrb = setInterval(() => {
+                        if (currentState !== "OFF" && visualizer.sphere) {
+                            const fakeData = new Uint8Array(32);
+                            let intensity = isSpeaking ? 255 : 50;
+                            for(let i=0; i<32; i++) fakeData[i] = Math.random() * intensity;
+                            visualizer.outputAnalyser = { data: fakeData, update: () => {} };
+                            visualizer.inputAnalyser = { data: fakeData, update: () => {} };
+                        }
+                    }, 50);
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) throw new Error("Reconhecimento não suportado.");
+
+                globalRecognition = new SpeechRecognition();
+                globalRecognition.lang = 'pt-BR';
+                globalRecognition.continuous = true; 
+                globalRecognition.interimResults = false;
+
+                currentState = "STANDBY";
+                updateUI("SISTEMA ATIVO", "Diga 'Jarvis' e o comando", "#00ff66");
+                speakJarvis("Sistemas online, senhor. Orb Edition ativado.");
+
+                globalRecognition.onstart = () => {
+                    if(currentState === "STANDBY") updateUI("STANDBY", "Ouvindo...", "#00ff66");
+                };
+
+                globalRecognition.onerror = (event) => {
+                    if(event.error !== 'no-speech') {
+                        updateUI("ERRO", "Erro: " + event.error, "#ff0000");
+                    }
+                };
+
+                globalRecognition.onresult = (event) => {
+                    if(ignoreRecognition) return;
+
+                    const text = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+                    document.getElementById('output').innerText = text;
+
+                    if (currentState === "STANDBY") {
+                        if (text.includes("jarvis")) {
+                            if (text.length < 10) {
+                                currentState = "LISTENING_COMMAND";
+                                speakJarvis("Sim senhor, o que deseja anotar?");
+                            } else {
+                                processCommand(text);
+                            }
+                        }
+                    } 
+                    else if (currentState === "LISTENING_COMMAND") {
+                        processCommand(text);
+                    } 
+                    else if (currentState === "ASKING_CATEGORY") {
+                        let userCat = text.replace(/jarvis/g, "").trim();
+                        pendingData.category = userCat.charAt(0).toUpperCase() + userCat.slice(1);
+                        currentState = "CONFIRMING";
+                        let unitText = pendingData.unit ? pendingData.unit + " de " : "";
+                        let unitUI = pendingData.unit ? " " + pendingData.unit : "";
+                        updateUI("PROCESSANDO...", `Categoria: ${pendingData.category} | Qtd: ${pendingData.quantity}${unitUI} | Item: ${pendingData.item}`, "#00f2ff");
+                        speakJarvis(`Anotar ${pendingData.quantity} ${unitText}${pendingData.item} na categoria ${pendingData.category}?`);
+                    }
+                    else if (currentState === "CONFIRMING") {
+                        if (text.includes("sim") || text.includes("confirma") || text.includes("ok") || text.includes("pode")) {
+                            currentState = "SAVING";
+                            let unitUI = pendingData.unit ? " " + pendingData.unit : "";
+                            updateUI("✅ SALVANDO...", `${pendingData.quantity}x${unitUI} ${pendingData.item}`, "#00ff66");
+                            
+                            // Dispara para a planilha
+                            fetch(SCRIPT_URL, {
+                                method: 'POST', mode: 'no-cors',
+                                body: JSON.stringify({ item: pendingData.item, quantidade: pendingData.quantity, unidade: pendingData.unit, categoria: pendingData.category })
+                            }).catch(e => console.log("Erro na planilha:", e));
+
+                            speakJarvis("Pronto.", () => { 
+                                currentState = "STANDBY"; 
+                                updateUI("STANDBY", "Aguardando próximo item...", "#00ff66");
+                            });
+
+                        } else if (text.includes("não") || text.includes("cancela")) {
+                            updateUI("CANCELADO", "Operação abortada.", "#ffaa00");
+                            speakJarvis("Cancelado.", () => { currentState = "STANDBY"; });
+                        } else {
+                            speakJarvis("Confirme com sim ou não.");
+                        }
+                    }
+                };
+
+                globalRecognition.onend = () => {
+                    if (currentState !== "OFF") {
+                        try { globalRecognition.start(); } catch(e) {}
+                    }
+                };
+
+                globalRecognition.start();
+
+            } catch (err) {
+                console.error(err);
+                updateUI("ERRO", err.message, "#ff0000");
+                currentState = "OFF";
+            }
+        };
     </script>
 </body>
 </html>
